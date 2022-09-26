@@ -1,0 +1,6 @@
+XlsxWriter
+Django
+cx_oracle
+psycopg2
+jupyter
+numpy
