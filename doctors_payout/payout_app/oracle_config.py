@@ -3,16 +3,6 @@ import cx_Oracle as oracle
 
 # from oracle_config import *
 
-ip = "172.20.100.121"
-
-host = "emdb1-vip.kdahit.com"
-
-port = 1521
-
-service_name = "EMRAC.kdahit.com"
-
-instance_name = "EMRAC1"
-
 
 # ora_db = oracle.connect("appluser","appluser",dsn_tns)
 
@@ -44,15 +34,31 @@ instance_name = "EMRAC1"
 
 class Ora:
     def __init__(self):
-        self.dsn_tns = oracle.makedsn(ip, port, instance_name)
-        self.ora_db = oracle.connect("ibaehis", "ib123", self.dsn_tns)
+        ip = "172.20.200.16"
+
+        host = "khdb-scan.kdahit.com"
+
+        port = 1521
+
+        service_name = "newdb.kdahit.com"
+
+        instance_name = "NEWDB"
+        username = "ibaehis"
+        password = "ib123"
+        self.dsn_tns = oracle.makedsn(host, port, service_name=service_name)
+        self.ora_db = oracle.connect(username, password, self.dsn_tns)
         self.cursor = self.ora_db.cursor()
         self.pool = oracle.SessionPool(
-            "ibaehis", "ib123", self.dsn_tns, min=0, max=4, increment=1
+            username,
+            password,
+            self.dsn_tns,
+            min=3,
+            max=5,
+            increment=1,
+            getmode=0,
         )
 
     def status_update(self):
-
         if self.ora_db:
             return "You have connected to the Database"
 
@@ -64,7 +70,6 @@ class Ora:
     # self.ora_db.close()
 
     def doctor_payout_IP_KH(self, from_date, to_date):
-
         sql_qurey = f""" 
         
 
@@ -181,7 +186,6 @@ class Ora:
         return result, column_name
 
     def doctor_payout_OP_KH(self, from_date, to_date):
-
         sql_qurey = f""" 
         
 
@@ -300,6 +304,125 @@ class Ora:
             self.ora_db.close()
 
         return result
+
+    def ehc_dr_share(self, from_date, to_date):
+        sql_qurey = f""" 
+        
+        select b.patient_id as PATIENT_ID,b.ADDED_DATE as SERVICE_DATE,B.LOCN_CODE as SERVICE_CODE,c.PRACTITIONER_NAME as DOCTOR_NAME,
+        b.ENCOUNTER_ID as EPISODE_ID
+        from op_patient_queue_dtls b , AM_PRACTITIONER c where b.PRACTITIONER_ID = c.PRACTITIONER_ID 
+        AND B.ORDER_ID like'CNOP%'and B.ADDED_DATE between :from_date and to_date(:to_date) + 1
+        order by b.ADDED_DATE
+
+        
+        """
+        # p_language_id total 5 first at 72, p_facility_id at 111, :p_fm_bill_date at 113, p_to_bill_date at 115
+        # p_frm_doctor_id at 172
+
+        with self.pool.acquire() as connection:
+            cursor = connection.cursor()
+            cursor.execute(sql_qurey, [from_date, to_date])
+            result = cursor.fetchall()
+
+            # self.cursor.execute(sql_qurey, [from_date, to_date, p_frm_doctor_id])
+            # data = self.cursor.fetchall()
+
+            column_name = [i[0] for i in cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return result, column_name
+
+    def gst_on_service_check(self, service_code):
+        get_gst_on_service_check = f"""
+        select a.LONG_DESC 
+        from BL_ADDL_CHARGE_RULE a, BL_ADDL_CHARGE_RULE_BY_BS b
+        where a.RULE_CODE = b.RULE_CODE
+        and b.BLNG_SERV_CODE = :service_code
+
+        """
+        self.cursor.execute(get_gst_on_service_check, [service_code])
+        data = self.cursor.fetchall()
+        column_name = [i[0] for i in self.cursor.description]
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return data
+
+    #        SELECT RULE_CODE,blng_serv_code
+    #       FROM BL_ADDL_CHARGE_RULE_BY_CS
+    #       WHERE BLNG_SERV_CODE IN (SELECT blng_Serv_code from bl_patient_charges_interface where patient_id= :uhid and episode_id= :service_code)
+
+    def service_check_on_cosmetic(self, uhid, episode_id):
+        get_service_check_on_cosmetic = f"""
+
+        SELECT RULE_CODE,blng_serv_code
+        FROM BL_ADDL_CHARGE_RULE_BY_CS
+        WHERE BLNG_SERV_CODE IN (SELECT blng_Serv_code from bl_patient_charges_interface 
+        where patient_id= :uhid 
+        and episode_id= :episode_id)
+
+
+        """
+        self.cursor.execute(get_service_check_on_cosmetic, [uhid, episode_id])
+        data = self.cursor.fetchall()
+        column_name = [i[0] for i in self.cursor.description]
+
+        return data, column_name
+
+    def get_plastic_surgeons(
+        self,
+    ):
+        plastic_surgeons_query = f"""
+
+        select PRACTITIONER_NAME
+        from AM_PRACTITIONER,AM_SPECIALITY
+        where PRIMARY_SPECIALITY_CODE =  speciality_code
+        and LONG_DESC = 'PLASTIC SURGERY'
+        and APC_NO is not Null
+
+
+        """
+        self.cursor.execute(plastic_surgeons_query)
+        data = self.cursor.fetchall()
+        column_name = [i[0] for i in self.cursor.description]
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return data, column_name
+
+    def gst_on_cosmetic_and_plastic(self):
+        plastic_surgeons_query = f"""
+
+        select PRACTITIONER_NAME,LONG_DESC
+        from AM_PRACTITIONER,AM_SPECIALITY
+        where PRIMARY_SPECIALITY_CODE =  speciality_code
+        and LONG_DESC in ('PLASTIC SURGERY','DERMATOLOGY','DENTAL SURGERY','AESTHETIC CLINIC')
+
+
+        """
+        self.cursor.execute(plastic_surgeons_query)
+        data = self.cursor.fetchall()
+        column_name = [i[0] for i in self.cursor.description]
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return data, column_name
+
+    def close_connection(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import numpy as np
 import logging
@@ -16,7 +17,6 @@ except:
 class Support:
     def __init__(self, *args, **kwargs):
         "Later define a init fuction as per requirement"
-        self.dataframe = pd.DataFrame()
 
     def delete_dataframe(self, dataframe):
         del [[dataframe]]
@@ -71,7 +71,6 @@ class Support:
 
         # Iterate through each column and set the width == the max length in that column. A padding length of 2 is also added.
         for i, col in enumerate(excel_data.columns):
-
             # find length of column i
             try:
                 column_len = excel_data[col].astype(str).str.len().max()
@@ -90,7 +89,7 @@ class Support:
             # set the column length
             worksheet.set_column(i, i, column_len)
 
-        generate_excel.save()
+        generate_excel.close()
         return excel_file_path
 
     def error_log(self):
@@ -140,7 +139,6 @@ class Support:
         return dataframe
 
     def CINP_OR_CNOP_ANE(self, row):
-
         if "CNIP" in row:
             return "IP Consultation"
         elif "CNOP" in row:
@@ -250,26 +248,33 @@ class Support:
             return dataframe
 
     def check_peadiatric(self, dataframe):
+        # Filter Only Peadiatric Fe
         pead_filter_df = dataframe[dataframe["SERVICE_DESC"].isin(["Paediatrican Fe"])]
-        temp_pd = pd.DataFrame()
-        for i in range(len(pead_filter_df)):
-            row = pead_filter_df.iloc[[i]]
 
+        for i in range(len(pead_filter_df)):
+            # Current row with pead fe
+            row = pead_filter_df.iloc[[i]]
+            # convert pr number from dataframe object  to string
             pr_number = "".join(
                 [str(elem) for i, elem in enumerate(row["PHYSICIAN_ID"])]
             )
 
+            # check if dr is a peads dr from Oracle Database
             db = Ora()
             doctor_data = db.check_dr_pead(pr_number)
 
+            # IF Dr is not Peadiatric  change the doctor name
             if not doctor_data:
+                #  change index value from pandas object to string
                 index = "".join(str(elem) for i, elem in enumerate(row.index))
                 dataframe.at[int(index), "DOCTOR_SHARE"] = ""
 
+                # Filter the found patient from dataframe to get all doctor
                 df_filter = dataframe[
                     dataframe["PATIENT_ID"].isin(row["PATIENT_ID"].values.astype(str))
                 ]
 
+                # Filter the current unwanted doctor
                 df_filter = df_filter[
                     ~df_filter["DOCTOR_NAME"].isin(row["DOCTOR_NAME"])
                 ]
@@ -277,15 +282,242 @@ class Support:
                 for i in range(len(df_filter)):
                     df_row = df_filter.iloc[[i]]
 
+                    # get pr numbers of other doctors to check , also convert prnumber from dataframe object to string
                     pr_number_df = "".join(
                         [str(elem) for i, elem in enumerate(df_row["PHYSICIAN_ID"])]
                     )
+
+                    # Check wheter doctor is a peads doctors
                     db = Ora()
                     find_if_paeds = db.check_dr_pead(pr_number_df)
 
                     if find_if_paeds:
-                        dataframe.at[int(index), "DOCTOR_NAME"] = df_row["DOCTOR_NAME"]
+                        old_dr_name = dataframe.at[int(index), "DOCTOR_NAME"]
+
+                        new_dr_name = df_row["DOCTOR_NAME"].values.astype(str)[0]
+
+                        # change the old dr name to new doctor who is a peads
+                        dataframe.at[int(index), "DOCTOR_NAME"] = new_dr_name
+
+                        # Add A comment in the comment section
+                        dataframe.at[
+                            int(index), "COMMENTS"
+                        ] = f"Changed from {old_dr_name} to {new_dr_name}"
 
         self.delete_dataframe(pead_filter_df)
         self.delete_dataframe(df_filter)
         return dataframe
+
+    def ehc_patient_working(self, dataframe, doctors_list_df):
+        db = Ora()
+        ehc_data, ehc_column = db.ehc_dr_share("01-Aug-2022", "31-Aug-2022")
+        ehc_df = pd.DataFrame(data=ehc_data, columns=list(ehc_column))
+        ehc_df["PATIENT_TYPE"] = "EHC"
+        ehc_df["NET_AMOUNT"] = 400
+        ehc_df["DOCTOR_SHARE"] = 400
+        ehc_df["GROSS_AMOUNT"] = 400
+        ehc_df["SOURCE OF DATA"] = "EHC Query"
+        ehc_df["REFERENCE_GROUP"] = "OP Consultation"
+
+        ehc_df = pd.merge(
+            ehc_df,
+            doctors_list_df[["DOCTOR_NAME", "DOCTORS_GROUP"]],
+            on="DOCTOR_NAME",
+            how="left",
+        )
+
+        dataframe = self.concat_dataframes(dataframe, ehc_df)
+
+        ehc_df = self.delete_dataframe(ehc_df)
+        return dataframe
+
+    def rh_working(self, rh_dataframe, main_dataframe):
+        # make a set of main dataframe sevice code to intersect with rh dataframe
+        main_serv = set(main_dataframe["SERVICE_CODE"])
+
+        for i in range(len(rh_dataframe)):
+            # Define row
+            row = rh_dataframe.iloc[[i]]
+            # Define current row's service code  to set for intercestion
+            rh_serv = set(row["SERVICE_CODE"])
+
+            # Changing Doctor's Share In RH Dataframe from 80% to 100%
+            if rh_dataframe.at[i, "DOCTOR_SHARE"] > 0:
+                rh_dataframe.at[i, "DOCTOR_SHARE"] = (
+                    rh_dataframe.at[i, "DOCTOR_SHARE"] * 100 / 80
+                )
+
+            # Keep all the vaild values
+            if rh_serv.intersection(main_serv):
+                pass
+            elif "grade" in row["SERVICE_DESC"].values.astype(str)[0].lower():
+                pass
+            # else any other service to be 0 includeing 2D Echo and Dressing
+            else:
+                rh_dataframe.at[i, "DOCTOR_SHARE"] = 0
+
+        return rh_dataframe
+
+    def rev_coloumn_data(self, main_dataframe):
+        main_dataframe["DOCTOR_SHARE"] = pd.to_numeric(
+            main_dataframe["DOCTOR_SHARE"], errors="coerce"
+        )
+        main_dataframe.loc[
+            main_dataframe["DOCTOR_SHARE"].values.astype(int) > 1, "REV_STREAM"
+        ] = 1
+        main_dataframe.loc[main_dataframe["DOCTOR_SHARE"] < 1, "REV_STREAM"] = -1
+        main_dataframe.loc[main_dataframe["DOCTOR_SHARE"].isnull(), "REV_STREAM"] = 1
+        return main_dataframe
+
+    # Prototype not in use
+    def cosmetic_service_deductions(self, dataframe):
+        # Defining unique episode id uising set
+        episode_id = set(dataframe["EPISODE_ID"].values.astype(str))
+
+        for episode in episode_id:
+            # Defining UHID to search later
+            uhid = dataframe.loc[dataframe["EPISODE_ID"] == int(episode)][
+                "PATIENT_ID"
+            ].values.astype(str)[0]
+            # Running Query
+            db = Ora()
+            tax_data, column_name = db.service_check_on_cosmetic(uhid, episode)
+            # Data comes from the query means this paticular service is charegeable
+            if tax_data:
+                # Creating new Dataframe to extract all billing service code
+                tax_df = pd.DataFrame(data=tax_data, columns=list(column_name))
+                # Get All the serviec where GST is Charged at 18% Percent
+                service_id = list(set(tax_df["BLNG_SERV_CODE"]))
+                # filter the above service from data frame to iterate
+                all_entery_of_episode = dataframe[
+                    (dataframe["PATIENT_ID"] == uhid)
+                    & (dataframe["EPISODE_ID"] == int(episode))
+                    & dataframe["SERVICE_CODE"].isin(service_id)
+                ]
+                # Creating a list of Index values to Iterate
+                index = list(all_entery_of_episode.index)
+                for i in index:
+                    # Definind Dr share for calucalations
+                    dr_share = dataframe.iloc[i]["DOCTOR_SHARE"]
+                    # Dataframe.loc or iloc will create a slice so remeber to always use .at method to change
+                    # the value in dataframe
+                    dataframe.at[i, "DOCTOR_SHARE"] = float(dr_share) / 1.18
+                    dataframe.at[i, "COMMENTS"] = f"Changed from {dr_share}"
+
+        # Garbage Collection
+        tax_df = self.delete_dataframe(tax_df)
+        all_entery_of_episode = self.delete_dataframe(all_entery_of_episode)
+
+        return dataframe
+
+    # Prototype not in use
+    def plastic_surgeons_working_gst(self, dataframe):
+        db = Ora()
+        plastic_dr, column_name = db.get_plastic_surgeons()
+        plastic_df = pd.DataFrame(data=plastic_dr, columns=list(column_name))
+        plastic_dr_filter = dataframe[
+            dataframe["DOCTOR_NAME"].isin(list(plastic_df["PRACTITIONER_NAME"]))
+        ]
+        return plastic_dr_filter
+
+    def plastic_cosmetic_gst(self, dataframe):
+        db = Ora()
+        dr_list, _ = db.gst_on_cosmetic_and_plastic()
+        episode_id = np.array(
+            list(
+                map(
+                    str,
+                    dataframe[dataframe["DOCTOR_NAME"].isin(dr[0] for dr in dr_list)][
+                        "EPISODE_ID"
+                    ].unique(),
+                )
+            )
+        ).astype(int)
+
+        df_filtered = dataframe[dataframe["EPISODE_ID"].isin(episode_id)]
+        db = Ora()
+        tax_data = np.array(
+            np.unique(
+                [
+                    data_tuple[1]
+                    for data, _ in [
+                        db.service_check_on_cosmetic(patient_id, episode_id)
+                        for patient_id, episode_id in zip(
+                            df_filtered["PATIENT_ID"].tolist(),
+                            df_filtered["EPISODE_ID"].tolist(),
+                        )
+                    ]
+                    if data
+                    for data_tuple in data
+                ]
+            )
+        )
+        db.close_connection()
+        all_entery_of_episode = np.unique(
+            dataframe[dataframe["SERVICE_CODE"].isin(tax_data)]["EPISODE_ID"].to_numpy()
+        )
+        dataframe.loc[
+            dataframe["EPISODE_ID"].isin(all_entery_of_episode), "COMMENTS"
+        ] = (
+            dataframe.loc[
+                dataframe["EPISODE_ID"].isin(all_entery_of_episode), "COMMENTS"
+            ].fillna("")
+            + " Changed from "
+            + dataframe.loc[
+                dataframe["EPISODE_ID"].isin(all_entery_of_episode), "DOCTOR_SHARE"
+            ].astype(str)
+        )
+        dataframe.loc[
+            dataframe["EPISODE_ID"].isin(all_entery_of_episode), "DOCTOR_SHARE"
+        ] = np.divide(
+            dataframe.loc[
+                dataframe["EPISODE_ID"].isin(all_entery_of_episode), "DOCTOR_SHARE"
+            ],
+            1.18,
+        )
+
+        return dataframe
+
+    def negative_to_postive_entry_check(self, dataframe):
+        negative_df = dataframe[dataframe["DOCTOR_SHARE"] < 0]
+        index_list = list(negative_df.index)
+        df_merged = pd.DataFrame()
+        for index in index_list:
+            row = dataframe.iloc[[index]]
+            pat_id = row["PATIENT_ID"].values.astype(str)[0]
+            ep_id = row["EPISODE_ID"].values.astype(int)[0]
+            service_code = row["SERVICE_CODE"].values.astype(str)[0]
+            dr_share = row["DOCTOR_SHARE"].values.astype(float)[0]
+            dr_name = row["DOCTOR_NAME"].values.astype(str)[0]
+
+            a = dataframe[
+                (dataframe["EPISODE_ID"] == ep_id)
+                & (dataframe["DOCTOR_SHARE"] == abs(dr_share))
+            ]
+
+            if a.empty:
+                # df_merged = pd.concat([df_merged,row], ignore_index=True, sort=False)
+                b = dataframe[
+                    (dataframe["PATIENT_ID"] == pat_id)
+                    & (dataframe["DOCTOR_SHARE"] == abs(dr_share))
+                ]
+                if b.empty:
+                    print(b)
+                else:
+                    df_merged = pd.concat(
+                        [df_merged, row], ignore_index=True, sort=False
+                    )
+            else:
+                print(row)
+
+        return df_merged
+
+    def elapsed_time(func):
+        def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            result = func(*args, **kwargs)
+            end_time = time.perf_counter()
+            print(f"Elapsed time: {end_time - start_time:.2f} seconds")
+            return result
+
+        return wrapper

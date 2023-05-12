@@ -1,3 +1,4 @@
+from ast import main
 import pandas as pd
 import os
 
@@ -14,6 +15,9 @@ def index(request):
     postDB = PostgressDB()
     if request.method == "GET":
         current_dir = os.path.dirname(os.path.abspath(__file__))
+##################################################################################################################
+#Step 1
+##################################################################################################################
 
         # Step 1 : Sub-Section 1 making the main DataFrame
         df_dp_ip_kh = pd.read_excel(f"{current_dir}\\resources\ip_payout.xlsx")
@@ -70,6 +74,15 @@ def index(request):
 
         # Delete Extra Column
         df_dp_rh = sup.delete_columns(df_dp_rh, ["SERVICE_GROUP"])
+##################################################################################################################
+#Step 6
+##################################################################################################################
+
+        #RH DataFrame Working
+        df_dp_rh = sup.rh_working(df_dp_rh,main_dataframe)
+##################################################################################################################
+#End Step 6
+##################################################################################################################
 
         # Concatanate MainDataframe and RH Dataframe
         main_dataframe = sup.concat_dataframes(main_dataframe, df_dp_rh)
@@ -83,7 +96,7 @@ def index(request):
             doctors_list_df,
             {"doctors_name": "DOCTOR_NAME", "doctors_group": "DOCTORS_GROUP"},
         )
-        # Extract Two Column
+        # Extract Two Column Will be deleted in EHC
         doctors_list_df = doctors_list_df[["DOCTOR_NAME", "DOCTORS_GROUP"]]
 
         # Add Doctors Group in Main Dataframe
@@ -93,8 +106,6 @@ def index(request):
             on="DOCTOR_NAME",
             how="left",
         )
-        # Delet Unused Dataframe Doctors List
-        doctors_list_df = sup.delete_dataframe(doctors_list_df)
 
         # Step 1 : Sub-Section 7 add_new_column ref group column
         # Step 1 : Sub-Section 7 check and insert valuce as per CINP
@@ -104,6 +115,7 @@ def index(request):
 
         # End of Step 1
         ######################################################################################
+
 
         # Step 2 Transplant Split
         transplant_dataframe = pd.read_excel(
@@ -159,9 +171,52 @@ def index(request):
         transp_df = sup.delete_dataframe(transp_df)
         transplant_dataframe = sup.delete_dataframe(transplant_dataframe)
 
-        # SRS Share distribution
+##################################################################################################################
+#Step 3
+##################################################################################################################
+        # SRS EDGE Share distribution
         main_dataframe = sup.srs_distribution(main_dataframe)
 
+##################################################################################################################
+#Step 4
+##################################################################################################################
+
+        # Check Paediatrican Fe Doctor and replace with peads dr if dr is not a paediatrician
+        main_dataframe = sup.check_peadiatric(main_dataframe)
+##################################################################################################################
+#Step 5
+##################################################################################################################
+
+        # EHC Working
+        main_dataframe = sup.ehc_patient_working(main_dataframe, doctors_list_df)
+        # Delete Unused Dataframe Doctors List
+        doctors_list_df = sup.delete_dataframe(doctors_list_df)
+
+##################################################################################################################
+# Step 7 (Step 6 is up in Step 1)
+##################################################################################################################
+
+        # Column REV_STREAM 
+        main_dataframe = sup.rev_coloumn_data(main_dataframe)
+
+##################################################################################################################
+# Step 8
+##################################################################################################################
+
+        main_dataframe = sup.plastic_cosmetic_gst(main_dataframe)
+
+##################################################################################################################
+# Step 9 covered in step 8
+##################################################################################################################
         
+##################################################################################################################
+# Step 10 
+##################################################################################################################
+
+        
+        
+
+
+
         sup.excel_generator(excel_data=main_dataframe, page_name="main_dataframe")
         return render(request, "payout_app/index.html")

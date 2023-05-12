@@ -53,6 +53,8 @@ class PostgressDB:
         self.connection_close()
         return data, column_name
 
+    
+
 
 if __name__ == "__main__":
     from_date = "2022-07-19"
