@@ -4,9 +4,12 @@ import numpy as np
 import logging
 import gc
 import os
+import socket
 
 from pathlib import Path
 from datetime import datetime
+from payout_app.email_sender import Email_Sender
+from ftplib import FTP
 
 try:
     from .oracle_config import Ora
@@ -35,12 +38,10 @@ class Support:
 
         # gives you location of manage.py
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        curret_path = Path(current_dir)
-        parent_path = curret_path.parent
         # write the print fuction in error log. Test on Apache reverse proxy but not on nginx
         # sys.stderr.write(excel_file_path)
 
-        excel_file_path = f"{parent_path}/{page_name}-{add_time_to_page_string}.xlsx"
+        excel_file_path = f"{current_dir}/excel_files/{page_name}-{add_time_to_page_string}.xlsx"
 
         # creates a log file and report errors
         # logging.basicConfig(filename="report_error.log", level=logging.DEBUG)
@@ -479,40 +480,33 @@ class Support:
         return dataframe
 
     def negative_to_postive_entry_check(self, dataframe):
-        negative_df = dataframe[dataframe["DOCTOR_SHARE"] < 0]
-        index_list = list(negative_df.index)
-        df_merged = pd.DataFrame()
-        for index in index_list:
-            row = dataframe.iloc[[index]]
-            pat_id = row["PATIENT_ID"].values.astype(str)[0]
-            ep_id = row["EPISODE_ID"].values.astype(int)[0]
-            service_code = row["SERVICE_CODE"].values.astype(str)[0]
-            dr_share = row["DOCTOR_SHARE"].values.astype(float)[0]
-            dr_name = row["DOCTOR_NAME"].values.astype(str)[0]
+        negative_share_rows = dataframe[dataframe["DOCTOR_SHARE"] < 0]
 
-            a = dataframe[
-                (dataframe["EPISODE_ID"] == ep_id)
-                & (dataframe["DOCTOR_SHARE"] == abs(dr_share))
+        for _, row in negative_share_rows.iterrows():
+            doctor_share = abs(row["DOCTOR_SHARE"])
+            doctor_name = row["DOCTOR_NAME"]
+            episode_id = row["EPISODE_ID"]
+            comments = (
+                str(dataframe.loc[row.name, "COMMENTS"]) + "   ---   "
+                if str(dataframe.loc[row.name, "COMMENTS"]) != "nan"
+                else ""
+            )  # Convert float to string
+
+            matching_rows = dataframe[
+                (dataframe["DOCTOR_SHARE"] == doctor_share)
+                & (dataframe["DOCTOR_NAME"] == doctor_name)
+                & (dataframe["EPISODE_ID"] == episode_id)
             ]
-
-            if a.empty:
-                # df_merged = pd.concat([df_merged,row], ignore_index=True, sort=False)
-                b = dataframe[
-                    (dataframe["PATIENT_ID"] == pat_id)
-                    & (dataframe["DOCTOR_SHARE"] == abs(dr_share))
-                ]
-                if b.empty:
-                    print(b)
-                else:
-                    df_merged = pd.concat(
-                        [df_merged, row], ignore_index=True, sort=False
-                    )
+            if not matching_rows.empty:
+                dataframe.loc[row.name, "COMMENTS"] = comments + " Positive Entry Found"
             else:
-                print(row)
+                dataframe.loc[row.name, "COMMENTS"] = (
+                    comments + " No!!! Positive Entry Found. Manual Check is Required"
+                )
 
-        return df_merged
+        return dataframe
 
-    def elapsed_time(func):
+    def elapsed_time(self,func):
         def wrapper(*args, **kwargs):
             start_time = time.perf_counter()
             result = func(*args, **kwargs)
@@ -521,3 +515,73 @@ class Support:
             return result
 
         return wrapper
+
+    def get_container_ip(self):
+        return socket.gethostbyname(socket.gethostname())
+    
+    def upload_file_to_ftp(self,file_path, ftp_server="172.20.200.135", ftp_username="ftpuser", ftp_password="kh@12345", ftp_folder="d_excel", ftp_port=21):
+        ftp = FTP()
+        ftp.connect(ftp_server, ftp_port)
+        ftp.login(ftp_username, ftp_password)
+        ftp.cwd(ftp_folder)
+        file_name = file_path.split("/")[-1]
+        with open(file_path, "rb") as file:
+            ftp.storbinary(f"STOR {file_name}", file)
+        ftp.quit()
+
+    def send_email_user(self,excel_file_path):
+        # Get the size of the file in bytes
+        file_size_mb = os.path.getsize(excel_file_path) / (1024 * 1024)
+
+        # FTP and email configuration
+        ftp_config = {
+            "ftp_server": "172.20.200.135",
+            "ftp_username": "ftpuser",
+            "ftp_password": "kh@12345",
+            "ftp_folder": "d_excel",
+            "ftp_port": 21
+        }
+
+        email_config = {
+            "send_from": "Ahmed Qureshi <ahmed.qureshi@kokilabenhospitals.com>",
+            "send_to": "ahmed.qureshi@kokilabenhospitals.com",
+            "send_to_cc": "prasad.manjrekar@kokilabenhospitals.com",
+            "subject": "Automated Email -- Doctors KD Report",
+            "text": """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>File Access</title>
+                </head>
+                <body style="font-family: Arial, sans-serif;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+                        <h1>File Access</h1>
+                        <p>This file, along with all the previous files, is accessible by pasting the following link into the URL field of the File Explorer:</p>
+                        <p style="word-break: break-all; margin-bottom: 10px;">ftp://172.20.200.135/d_excel/</p>
+                        <p>and entering the following credentials:</p>
+                        <div style="margin-top: 20px;">
+                            <p><strong>ID/username:</strong> ftpuser</p>
+                            <p><strong>Password:</strong> kh@12345</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            """,
+            "server": "172.20.200.29",
+            "port": 25
+        }
+
+        # Upload file to FTP
+        self.upload_file_to_ftp(excel_file_path, **ftp_config)
+
+        # Check if the file size is greater than 25 MB and send email accordingly
+        if file_size_mb >= 25:
+            Email_Sender(**email_config)
+        else:
+            email_config["attachment"] = excel_file_path
+            Email_Sender(**email_config)
+
+    def get_ip_kh_data(self):
+        
+        df_dp_ip_kh = "'"
+        return df_dp_ip_kh

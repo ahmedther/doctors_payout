@@ -1,9 +1,10 @@
 from django.contrib import admin
-from .models import DoctorProfile, Transplant
+from .models import *
 
 
 admin.site.register(DoctorProfile)
 admin.site.register(Transplant)
+admin.site.register(Query)
 
 
 # CHnage admin Panel

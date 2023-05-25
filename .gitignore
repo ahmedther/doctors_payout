@@ -1,0 +1,20 @@
+*.pyc
+*.exe
+*.ps1
+*.bat
+*.bat
+activate
+jsonpointer
+
+doctors_payout/payout_app/__pycache__/excel_maker.cpython-310.pyc
+doctors_payout/payout_app/__pycache__/excel_maker.cpython-310.pyc
+doctors_payout/payout_app/__pycache__/oracle_config.cpython-310.pyc
+doctors_payout/payout_app/__pycache__/postgress_config.cpython-310.pyc
+doctors_payout/payout_app/__pycache__/views.cpython-310.pyc
+doctors_payout/payout_app/resources/doc.xlsx
+doctors_payout/payout_app/resources/ip_payout.xlsx
+doctors_payout/payout_app/resources/main_dataframe.xlsx
+doctors_payout/payout_app/resources/My Transplant Working.xlsx
+pywin32_postinstall.py
+pywin32_testall.py
+vba_extract.py

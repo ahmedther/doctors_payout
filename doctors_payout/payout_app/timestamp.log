@@ -1,0 +1,8 @@
+INFO:root:Finished processing on :  30-Sep-2022-16-34-14-111478
+INFO:root:Finished processing on :  30-Sep-2022-16-40-04-106246
+INFO:root:Finished processing on :  30-Sep-2022-16-48-21-415933
+DEBUG:parso.cache:pickle loaded: D:\Python Projects\doctors_payout\lib\site-packages\jedi\third_party\typeshed\stdlib\3\builtins.pyi
+DEBUG:parso.cache:pickle loaded: D:\Python Projects\doctors_payout\lib\site-packages\jedi\third_party\typeshed\stdlib\3\sys.pyi
+DEBUG:parso.cache:pickle loaded: C:\Python\lib\typing.py
+DEBUG:parso.cache:pickle loaded: D:\Python Projects\doctors_payout\lib\site-packages\jedi\third_party\typeshed\stdlib\3\typing.pyi
+INFO:root:Finished processing on :  01-Oct-2022-10-34-55-777301

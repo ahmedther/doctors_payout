@@ -1,0 +1,3 @@
+INFO:root:Finished processing on :  30-Sep-2022-16-46-36-872990
+WARNING:django.request:Not Found: /favicon.ico
+INFO:django.utils.autoreload:D:\Python Projects\doctors_payout\Scripts\doctors_payout\payout_app\views.py changed, reloading.

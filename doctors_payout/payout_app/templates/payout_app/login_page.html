@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctors Payout (K.D) Login Page</title>
+    <link rel="shortcut icon" href={% static 'payout_app/img/favicon.ico' %} type="image/x-icon">
+    <link rel='stylesheet' href={% static 'payout_app/css/login_page.css' %}>
+
+</head>
+<body>
+    <h1 contenteditable data-heading="Doctor's Payout - K.D">
+         Doctor's Payout - K.D 
+    </h1>
+    
+    <form method="POST" class="container">
+        {% csrf_token %}
+            
+            <input class="input" name="username" type="text" required {%if username%}value="{{username}}"{%endif%}>
+            <label class="label ">Username</label>
+
+            <input class="input input-pass" name="password" type="password" required>
+            <label class="label-pass">Password</label>
+
+            <input type="submit" value="Submit">
+
+            
+            
+    </form>
+    <section class='section-error'>
+        {% if error %}
+            <p class="error">{{error}}</p>
+        {% endif %}
+    </section>
+    
+</body>
+
+<script src="{% static 'payout_app/js/login_page.js' %}"></script>
+
+</html>

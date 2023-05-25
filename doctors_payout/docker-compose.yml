@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    restart: always
+    image: doctor_payout_image
+    container_name: doctor_payout_container
+    volumes:
+      - .:/doctor_payout/
+    ports:
+      - 8007:8007

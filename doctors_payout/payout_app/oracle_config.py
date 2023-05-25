@@ -116,7 +116,7 @@ class Ora:
             WHERE a.blng_serv_code = d.blng_serv_code
             AND a.trx_status IS NULL
             AND a.operating_facility_id = 'KH'
-            AND a.service_date between :from_date and TO_DATE(:to_date) + 1
+            AND a.service_date between {from_date} and TO_DATE({to_date}) + 1
             AND a.episode_type IN ('I', 'D')
             AND a.physician_id =
             DECODE (NVL (:p_frm_doctor_id, '**'),
@@ -214,7 +214,7 @@ class Ora:
         AND (('A' !='A' and a.episode_type = 'A')
         or ('A' ='A' and a.episode_type =a.episode_type)) 
         AND a.operating_facility_id = 'KH'
-        AND a.bill_doc_date between :from_date and TO_DATE(:to_date) + 1
+        AND a.bill_doc_date between {from_date} and TO_DATE({to_date}) + 1
         AND a.episode_type IN ('O', 'E', 'R')
         AND a.physician_id =
         DECODE (NVL (:p_frm_doctor_id, '**'),
@@ -311,7 +311,7 @@ class Ora:
         select b.patient_id as PATIENT_ID,b.ADDED_DATE as SERVICE_DATE,B.LOCN_CODE as SERVICE_CODE,c.PRACTITIONER_NAME as DOCTOR_NAME,
         b.ENCOUNTER_ID as EPISODE_ID
         from op_patient_queue_dtls b , AM_PRACTITIONER c where b.PRACTITIONER_ID = c.PRACTITIONER_ID 
-        AND B.ORDER_ID like'CNOP%'and B.ADDED_DATE between :from_date and to_date(:to_date) + 1
+        AND B.ORDER_ID like'CNOP%'and B.ADDED_DATE between {from_date} and to_date({to_date}) + 1
         order by b.ADDED_DATE
 
         
@@ -424,6 +424,38 @@ class Ora:
         if self.ora_db:
             self.ora_db.close()
 
+
+
+
+    def run_query(self, sql_qurey):
+            
+            with self.pool.acquire() as connection:
+                cursor = connection.cursor()
+                for result in cursor.execute(sql_qurey):
+                    result = cursor.fetchall()
+                column_name = [i[0] for i in cursor.description]
+
+            if self.cursor:
+                self.cursor.close()
+            if self.ora_db:
+                self.ora_db.close()
+
+            return result, column_name
+    
+    def run_query_with_none_value(self, sql_qurey,none_value=None):
+            
+            with self.pool.acquire() as connection:
+                cursor = connection.cursor()
+                for result in cursor.execute(sql_qurey,[none_value]):
+                    result = cursor.fetchall()
+                column_name = [i[0] for i in cursor.description]
+
+            if self.cursor:
+                self.cursor.close()
+            if self.ora_db:
+                self.ora_db.close()
+
+            return result, column_name
 
 if __name__ == "__main__":
     a = Ora()

@@ -39,3 +39,10 @@ class Transplant(models.Model):
             + " - "
             + self.doctors_department
         )
+
+class Query(models.Model):
+    query_name = models.CharField(blank=False,null=False,verbose_name='Query Name',unique=True, help_text='Enter the name of the query')
+    query = models.TextField(blank=False,null=False,verbose_name='Query Name',unique=True, help_text='Enter the name of the query')
+
+    def __str__(self) -> str:
+        return self.query_name
