@@ -1,0 +1,27 @@
+# Git
+.git
+.gitignore
+
+# Docker
+.docker
+./node_modules
+
+# Python
+dactor_payout/__pycache__/
+dactor_payout/*/__pycache__/
+dactor_payout/*/*/__pycache__/
+dactor_payout/*/*/*/__pycache__/
+payout_app/__pycache__/
+payout_app/*/__pycache__/
+payout_app/*/*/__pycache__/
+payout_app/*/*/*/__pycache__/
+dactor_payout/*.pyc
+dactor_payout/*/*.pyc
+dactor_payout/*/*/*.pyc
+payout_app/*.pyc
+payout_app/*/*.pyc
+payout_app/*/*/*.pyc
+**/__pycache__/
+.env/
+.venv/
+venv/

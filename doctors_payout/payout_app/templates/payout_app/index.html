@@ -1,3 +1,46 @@
-hi
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Redirect Page</title>
+  <style>
+    body {
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-BAWA
+    .container {
+      background-color: #f0f0f0;
+      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.2), -8px -8px 16px rgba(255, 255, 255, 0.5);
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>This app is not accessible from here.</h1>
+    <p>Please proceed to <a id="redirectLink" href="http://172.20.100.81:8007">172.20.100.81:8007</a>.</p>
+  </div>
+
+  <script>
+    setTimeout(function() {
+      window.location.href = "http://172.20.100.81:8007";
+    }, 5000);
+  </script>
+</body>
+</html>

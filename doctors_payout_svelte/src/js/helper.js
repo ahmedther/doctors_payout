@@ -1,11 +1,12 @@
-
+const DJANGO_BASE_URL = import.meta.env.VITE_DJANGO_BASE_URL;
+console.log(DJANGO_BASE_URL);
 export async function makeAuthRequest(detail) {
     const username = detail.username;
     const password = detail.password;
 
     try {
         const csrftoken = getCookie('csrftoken');
-        const response = await fetch('http://127.0.0.1:8000/login/', {
+        const response = await fetch(`${DJANGO_BASE_URL}/login/`, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrftoken },
             body: JSON.stringify({
@@ -85,7 +86,7 @@ export async function errordisplay(error, errorMessage) {
 export async function sendExcelAndForms(formData) {
     try {
 
-        const response = await fetch("http://127.0.0.1:8000/", {
+        const response = await fetch(`${DJANGO_BASE_URL}/`, {
             method: 'POST',
 
             body: formData,
@@ -123,7 +124,7 @@ export function getUserID() {
 
 export async function fetchFiles(page) {
     try {
-        const response = await fetch(`http://127.0.0.1:8000/files/?page=${page}`, {
+        const response = await fetch(`${DJANGO_BASE_URL}/files/?page=${page}`, {
             method: "GET",
             credentials: "include", // Ensure cookies are sent with the request
         });
@@ -146,7 +147,7 @@ export async function fetchFiles(page) {
 
 export async function check_task_status() {
     try {
-        const response = await fetch(`http://127.0.0.1:8000/check_task_status/`, {
+        const response = await fetch(`${DJANGO_BASE_URL}/check_task_status/`, {
             method: "GET",
             credentials: "include", // Ensure cookies are sent with the request
         });

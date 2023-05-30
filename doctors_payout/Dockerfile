@@ -42,6 +42,6 @@ ENV PATH="/doctor_payout/scripts:/py/bin:$PATH"
 
 
 
-EXPOSE 8007
+EXPOSE 8008
 
 CMD ["./scripts/py_run.sh"]

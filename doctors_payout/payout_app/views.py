@@ -24,6 +24,10 @@ from celery.result import AsyncResult
 
 @csrf_exempt  
 def index(request):
+    if request.method == 'GET':
+        return render(request, "payout_app/index.html")
+    
+    if request.method == "POST":
 
     # try:
         rh_data = request.FILES['rh_data']
