@@ -1,6 +1,7 @@
 <script>
     import Navigation from "../UI/Navigation.svelte";
     import KDrequest from "./KDrequest.svelte";
+    import DownloadOldExcel from "./DownloadOldExcel.svelte";
     export let userName;
 
     let activeItem = "home";
@@ -18,7 +19,7 @@
     <section class="input-box" />
     <KDrequest on:logout />
 {:else if activeItem == "download"}
-    <p class="dow">Downlaod PAge</p>
+    <DownloadOldExcel />
 {/if}
 
 <style>

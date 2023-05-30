@@ -1,5 +1,6 @@
 <script>
-    import { sendExcelAndForms } from "../js/helper.js";
+    import { sendExcelAndForms, check_task_status } from "../js/helper.js";
+    import { onMount } from "svelte";
     import KHForm from "./KDForm.svelte";
     import Spinner from "../UI/Spinner.svelte";
     import Overlay from "../UI/Overlay.svelte";
@@ -10,6 +11,18 @@
     let errorMessage = null;
     let successPage = false;
     let emailId = null;
+
+    onMount(async () => {
+        isLoading = true;
+        const data = await check_task_status();
+        if (data.error) {
+            error = true;
+            errorMessage = data.error;
+        }
+        if (data.running) successPage = true;
+        if (data.not_running) console.log(data);
+        isLoading = false;
+    });
 
     async function submitRequest(e) {
         isLoading = true;
@@ -54,6 +67,7 @@
         background-color: #e4ebf5;
         display: flex;
         margin-top: 3vh;
+        height: max-content;
     }
     .gs-neumorphic-main-card-container {
         display: flex;
@@ -61,5 +75,6 @@
         align-items: center;
         width: 100%;
         margin: auto;
+        height: max-content;
     }
 </style>

@@ -121,3 +121,46 @@ export function getUserID() {
 }
 
 
+export async function fetchFiles(page) {
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/files/?page=${page}`, {
+            method: "GET",
+            credentials: "include", // Ensure cookies are sent with the request
+        });
+        if (!response.ok) {
+            let data = await response.json();
+            return data = { "error": `Connection Failed ! Error -- ${data.toString()}` };
+        }
+
+        const data = await response.json();
+        return data
+
+    } catch (error) {
+        const data = { "error": `Connection Failed ! Error -- ${error.toString()}` };
+        return data;
+    }
+}
+
+
+
+
+export async function check_task_status() {
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/check_task_status/`, {
+            method: "GET",
+            credentials: "include", // Ensure cookies are sent with the request
+        });
+        if (!response.ok) {
+            let data = await response.json();
+            return data = { "error": `Connection Failed ! Error -- ${data.toString()}` };
+        }
+
+        const data = await response.json();
+        return data
+
+    } catch (error) {
+        const data = { "error": `Connection Failed ! Error -- ${error.toString()}` };
+        return data;
+    }
+}
+

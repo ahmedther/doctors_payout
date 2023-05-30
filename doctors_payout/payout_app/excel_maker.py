@@ -8,8 +8,9 @@ import socket
 
 from pathlib import Path
 from datetime import datetime
-from payout_app.email_sender import Email_Sender
 from ftplib import FTP
+from payout_app.email_sender import Email_Sender
+from payout_app.models import Query
 
 try:
     from .oracle_config import Ora
@@ -261,8 +262,11 @@ class Support:
             )
 
             # check if dr is a peads dr from Oracle Database
+            sql_qurey = Query.objects.get(query_name="Check Paediatric Doctors").query
+            sql_qurey = sql_qurey.format(variable=f"'{pr_number}'")
             db = Ora()
-            doctor_data = db.check_dr_pead(pr_number)
+            doctor_data, _ = db.run_query(sql_qurey)
+            # doctor_data = db.check_dr_pead(pr_number)
 
             # IF Dr is not Peadiatric  change the doctor name
             if not doctor_data:
@@ -290,7 +294,10 @@ class Support:
 
                     # Check wheter doctor is a peads doctors
                     db = Ora()
-                    find_if_paeds = db.check_dr_pead(pr_number_df)
+                    sql_qurey = Query.objects.get(query_name="Check Paediatric Doctors").query
+                    sql_qurey = sql_qurey.format(variable=f"'{pr_number}'")
+                    find_if_paeds, _ = db.run_query(sql_qurey)
+                    # find_if_paeds = db.check_dr_pead(pr_number_df)
 
                     if find_if_paeds:
                         old_dr_name = dataframe.at[int(index), "DOCTOR_NAME"]
@@ -309,9 +316,12 @@ class Support:
         self.delete_dataframe(df_filter)
         return dataframe
 
-    def ehc_patient_working(self, dataframe, doctors_list_df):
+    def ehc_patient_working(self, dataframe, doctors_list_df,from_date,to_date):
+        sql_qurey = Query.objects.get(query_name="Doctors Share on EHC").query
+        sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
         db = Ora()
-        ehc_data, ehc_column = db.ehc_dr_share("01-Aug-2022", "31-Aug-2022")
+        ehc_data, ehc_column = db.run_query(sql_qurey)
+        # ehc_data, ehc_column = db.ehc_dr_share("01-Aug-2022", "31-Aug-2022")
         ehc_df = pd.DataFrame(data=ehc_data, columns=list(ehc_column))
         ehc_df["PATIENT_TYPE"] = "EHC"
         ehc_df["NET_AMOUNT"] = 400
@@ -381,8 +391,11 @@ class Support:
                 "PATIENT_ID"
             ].values.astype(str)[0]
             # Running Query
+            sql_qurey = Query.objects.get(query_name="Service Check on Cosmetic").query
+            sql_qurey = sql_qurey.format(variable=f"'{uhid}'",variable1=f"'{episode}'")
             db = Ora()
-            tax_data, column_name = db.service_check_on_cosmetic(uhid, episode)
+            tax_data, column_name = db.run_query(sql_qurey)
+            # tax_data, column_name = db.service_check_on_cosmetic(uhid, episode)
             # Data comes from the query means this paticular service is charegeable
             if tax_data:
                 # Creating new Dataframe to extract all billing service code
@@ -413,8 +426,10 @@ class Support:
 
     # Prototype not in use
     def plastic_surgeons_working_gst(self, dataframe):
+        sql_qurey = Query.objects.get(query_name="List of Plastic Surgeons").query
         db = Ora()
-        plastic_dr, column_name = db.get_plastic_surgeons()
+        plastic_dr, column_name = db.run_query(sql_qurey)
+        # plastic_dr, column_name = db.get_plastic_surgeons()
         plastic_df = pd.DataFrame(data=plastic_dr, columns=list(column_name))
         plastic_dr_filter = dataframe[
             dataframe["DOCTOR_NAME"].isin(list(plastic_df["PRACTITIONER_NAME"]))
@@ -422,8 +437,10 @@ class Support:
         return plastic_dr_filter
 
     def plastic_cosmetic_gst(self, dataframe):
+        sql_qurey = Query.objects.get(query_name="GST on Cosmetic and Plastic").query
         db = Ora()
-        dr_list, _ = db.gst_on_cosmetic_and_plastic()
+        dr_list, _ = db.run_query(sql_qurey)
+        # dr_list, _ = db.gst_on_cosmetic_and_plastic()
         episode_id = np.array(
             list(
                 map(
@@ -436,13 +453,16 @@ class Support:
         ).astype(int)
 
         df_filtered = dataframe[dataframe["EPISODE_ID"].isin(episode_id)]
+
+
+        sql_qurey = Query.objects.get(query_name="Service Check on Cosmetic").query
         db = Ora()
         tax_data = np.array(
             np.unique(
                 [
                     data_tuple[1]
                     for data, _ in [
-                        db.service_check_on_cosmetic(patient_id, episode_id)
+                        db.run_query(sql_qurey.format(variable=f"'{patient_id}'",variable1=f"'{episode_id}'"))
                         for patient_id, episode_id in zip(
                             df_filtered["PATIENT_ID"].tolist(),
                             df_filtered["EPISODE_ID"].tolist(),
@@ -529,25 +549,13 @@ class Support:
             ftp.storbinary(f"STOR {file_name}", file)
         ftp.quit()
 
-    def send_email_user(self,excel_file_path):
-        # Get the size of the file in bytes
-        file_size_mb = os.path.getsize(excel_file_path) / (1024 * 1024)
-
-        # FTP and email configuration
-        ftp_config = {
-            "ftp_server": "172.20.200.135",
-            "ftp_username": "ftpuser",
-            "ftp_password": "kh@12345",
-            "ftp_folder": "d_excel",
-            "ftp_port": 21
-        }
-
+    def send_email_user(self,excel_file_path,user,from_date,to_date,msg="File Access",subject=None):
         email_config = {
             "send_from": "Ahmed Qureshi <ahmed.qureshi@kokilabenhospitals.com>",
-            "send_to": "ahmed.qureshi@kokilabenhospitals.com",
-            "send_to_cc": "prasad.manjrekar@kokilabenhospitals.com",
-            "subject": "Automated Email -- Doctors KD Report",
-            "text": """
+            "send_to": user.email,
+            "send_to_cc": "ahmed.qureshi@kokilabenhospitals.com",
+            "subject": f"Automated Email -- Doctors KD Report --- From : {from_date} - To : {to_date}",
+            "text": f"""
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -555,7 +563,7 @@ class Support:
                 </head>
                 <body style="font-family: Arial, sans-serif;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-                        <h1>File Access</h1>
+                        <h1>{msg}</h1>
                         <p>This file, along with all the previous files, is accessible by pasting the following link into the URL field of the File Explorer:</p>
                         <p style="word-break: break-all; margin-bottom: 10px;">ftp://172.20.200.135/d_excel/</p>
                         <p>and entering the following credentials:</p>
@@ -571,17 +579,50 @@ class Support:
             "port": 25
         }
 
-        # Upload file to FTP
-        self.upload_file_to_ftp(excel_file_path, **ftp_config)
+        if subject:
+            email_config['subject'] = subject
 
-        # Check if the file size is greater than 25 MB and send email accordingly
-        if file_size_mb >= 25:
-            Email_Sender(**email_config)
+        if excel_file_path:
+
+            # Get the size of the file in bytes
+            file_size_mb = os.path.getsize(excel_file_path) / (1024 * 1024)
+
+            # FTP and email configuration
+            ftp_config = {
+                "ftp_server": "172.20.200.135",
+                "ftp_username": "ftpuser",
+                "ftp_password": "kh@12345",
+                "ftp_folder": "d_excel",
+                "ftp_port": 21
+            }
+            # Upload file to FTP
+            self.upload_file_to_ftp(excel_file_path, **ftp_config) 
+
+       
+
+            # Check if the file size is greater than 25 MB and send email accordingly
+            if file_size_mb >= 25:
+                Email_Sender(**email_config)
+            else:
+                email_config["attachment"] = excel_file_path
+                Email_Sender(**email_config)
         else:
-            email_config["attachment"] = excel_file_path
             Email_Sender(**email_config)
 
-    def get_ip_kh_data(self):
-        
-        df_dp_ip_kh = "'"
+
+    def get_ip_kh_data(self,from_date,to_date):
+        sql_qurey = Query.objects.get(query_name="Doctors Payout IP KH").query
+        sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
+        db = Ora()
+        print(sql_qurey)
+        data, column = db.run_query_with_none_value(sql_qurey)
+        df_dp_ip_kh = pd.DataFrame(data=data, columns=list(column))
         return df_dp_ip_kh
+    
+    def get_op_kh_data(self,from_date,to_date):
+        sql_qurey = Query.objects.get(query_name="Doctors Payout OP KH").query
+        sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
+        db = Ora()
+        data, column = db.run_query(sql_qurey)
+        df_dp_op_kh = pd.DataFrame(data=data, columns=list(column))
+        return df_dp_op_kh

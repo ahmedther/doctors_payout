@@ -38,7 +38,7 @@
         </p>
         <a
             class="success-message-text"
-            href="#"
+            href="/"
             on:click|preventDefault={logout}>Click Here to Logout</a
         >
         <p class="success-email">
