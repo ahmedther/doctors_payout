@@ -458,8 +458,8 @@ class Ora:
                     self.ora_db.close()
 
                 return result, column_name
-            except:
-                print("Error")
+            except Exception as e:
+                print(f"Error : \n {str(e)}")
 
 if __name__ == "__main__":
     a = Ora()

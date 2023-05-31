@@ -7,3 +7,4 @@ pandas
 openpyxl
 celery
 django-cors-headers
+uwsgi
