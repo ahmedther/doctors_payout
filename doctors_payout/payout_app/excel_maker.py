@@ -614,7 +614,6 @@ class Support:
         sql_qurey = Query.objects.get(query_name="Doctors Payout IP KH").query
         sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
         db = Ora()
-        print(sql_qurey)
         data, column = db.run_query_with_none_value(sql_qurey)
         df_dp_ip_kh = pd.DataFrame(data=data, columns=list(column))
         return df_dp_ip_kh
@@ -623,6 +622,19 @@ class Support:
         sql_qurey = Query.objects.get(query_name="Doctors Payout OP KH").query
         sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
         db = Ora()
-        data, column = db.run_query(sql_qurey)
+        data, column = db.run_query_with_none_value(sql_qurey)
         df_dp_op_kh = pd.DataFrame(data=data, columns=list(column))
         return df_dp_op_kh
+
+
+
+
+def post_files_to_uploaded_folder(file_name,file):
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploaded_files', file_name)
+    if os.path.exists(data_path):
+            os.remove(data_path)
+    # Save rh_data in ../uploaded_files directory and replace if already exists
+    with open(data_path, 'wb+') as destination:
+        for chunk in file.chunks():
+            destination.write(chunk)
+    return data_path

@@ -5,7 +5,7 @@ services:
     image: doctor_payout_image
     container_name: doctor_payout_container
     volumes:
-      - .:/doctor_payout/
+      - .:/doctor_payout
     ports:
       - 8008:8008
     depends_on:

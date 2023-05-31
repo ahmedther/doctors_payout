@@ -443,19 +443,23 @@ class Ora:
             return result, column_name
     
     def run_query_with_none_value(self, sql_qurey,none_value=None):
-            
-            with self.pool.acquire() as connection:
-                cursor = connection.cursor()
-                for result in cursor.execute(sql_qurey,[none_value]):
-                    result = cursor.fetchall()
-                column_name = [i[0] for i in cursor.description]
+            try:
+                print("Started")
+                with self.pool.acquire() as connection:
+                    cursor = connection.cursor()
+                    for result in cursor.execute(sql_qurey,[none_value]):
+                        result = cursor.fetchall()
+                    column_name = [i[0] for i in cursor.description]
+                print("Ended")
 
-            if self.cursor:
-                self.cursor.close()
-            if self.ora_db:
-                self.ora_db.close()
+                if self.cursor:
+                    self.cursor.close()
+                if self.ora_db:
+                    self.ora_db.close()
 
-            return result, column_name
+                return result, column_name
+            except:
+                print("Error")
 
 if __name__ == "__main__":
     a = Ora()

@@ -13,7 +13,7 @@ RUN npm ci  \
 
 EXPOSE 8007
 
-ENV DJANGO_BASE_URL=http://0.0.0.0:8008
+ENV VITE_DJANGO_BASE_URL=http://0.0.0.0:8008
 
 ENV PATH="/doctor_payout_sveltekit/scripts:${PATH}"
 
