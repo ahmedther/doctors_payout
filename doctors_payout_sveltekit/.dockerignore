@@ -4,7 +4,7 @@
 
 # Docker
 .docker
-./node_modules
+
 
 # Python
 dactor_payout/__pycache__/

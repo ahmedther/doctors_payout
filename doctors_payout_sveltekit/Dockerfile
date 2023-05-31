@@ -5,11 +5,15 @@ LABEL maintainer='ahmed'
 
 WORKDIR /doctor_payout_sveltekit
 
+
 COPY ./ ./
 
 
-RUN npm ci  \
+RUN npm install -g npm@9.6.7 \
+    && npm ci  \
     && chmod -R 777 /doctor_payout_sveltekit
+
+
 
 EXPOSE 8007
 
