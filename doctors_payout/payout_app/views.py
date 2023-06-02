@@ -16,47 +16,42 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.shortcuts import render, redirect
-from django.core import serializers
 
 from payout_app.task import process_kd
 from payout_app.decorators import *
 from payout_app.excel_maker import post_files_to_uploaded_folder
 
-@csrf_exempt  
+
+@csrf_exempt
 def index(request):
     if request.method == 'GET':
         return render(request, "payout_app/index.html")
     
     if request.method == "POST":
         try:
-            rh_data = request.FILES['rh_data']
-            transplant_data = request.FILES['transplantData']
             from_date = request.POST['from_date']
             to_date = request.POST['to_date']
 
             #Serializer User to make it go through asa parametere in process_kd.delay
-            user = User.objects.get(id=request.POST['userID'])
-            user_info = serializers.serialize('json', [user])
+            user_email = User.objects.get(id=request.POST['userID']).email
 
-            # Read Excel file using Pandas
-            rh_data_path = post_files_to_uploaded_folder(f'rh_data.{str(rh_data.name).split(".")[-1]}',rh_data)
-            transplant_data_path = post_files_to_uploaded_folder(f'transplant_data.{str(transplant_data.name).split(".")[-1]}',transplant_data)
+            rh_data = request.FILES.get('rh_data')
+            rh_data_path = post_files_to_uploaded_folder(f'rh_data.{str(rh_data.name).split(".")[-1]}', rh_data) if rh_data else None
 
-            # Convert DataFrames to JSON
-            process_kd.delay(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user=user_info)
-            return JsonResponse({'success': 'Success',"email_Id":user.email}, status=200)
+            transplant_data = request.FILES.get('transplantData')
+            transplant_data_path = post_files_to_uploaded_folder(f'transplant_data.{str(transplant_data.name).split(".")[-1]}', transplant_data) if transplant_data else None
+
+            
+            process_kd.delay(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
+            # process_kd(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
+            return JsonResponse({'success': 'Success', "email_Id": user_email}, status=200)
 
         except Exception as e:
-        #     Return error message with 400 status code
             return JsonResponse({'error': str(e)}, status=400)
-        
-    # # process_kd.delay()
-    # return render(request, "payout_app/index.html")
-
 
 # @csrf_exempt
 def check_task_status(request):
-    # try:
+    try:
         app = celery.Celery('doctors_payout')
         active_tasks = app.control.inspect().active()
         if active_tasks and any(active_tasks.values()):
@@ -64,9 +59,9 @@ def check_task_status(request):
         else:
             return JsonResponse({'not_running': 'No task ID found.'}, status=200)
 
-    # except Exception as e:
-    #     # Return error message with 400 status code
-    #     return JsonResponse({'error': str(e)}, status=400)
+    except Exception as e:
+        # Return error message with 400 status code
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 @csrf_exempt
@@ -86,7 +81,7 @@ def login_page(request):
             return JsonResponse({'error': 'Wrong User ID or Password. Try again or call 33333 /33330 to reset it'}, status=401)
         
         login(request, user)
-        return JsonResponse({'success': request.user.get_full_name().title(),"user_id":user.id,"token":default_token_generator.make_token(user) })    
+        return JsonResponse({'success': request.user.get_full_name().title(),"user_id":user.id,"token":default_token_generator.make_token(user),"email_id":user.email })    
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 

@@ -221,35 +221,47 @@ class Support:
         filter_df_srs = dataframe[
             dataframe["SERVICE_DESC"].isin(["EDGE SRS Doctor Fees"])
         ]
-        for i in range(len(filter_df_srs)):
-            # Define Current Row
-            row = filter_df_srs.iloc[[i]]
-            # Define Doctor Share
-            dr_share_amount = float(row["DOCTOR_SHARE"])
+        if not filter_df_srs.empty:
+            for i in range(len(filter_df_srs)):
+                # Define Current Row
+                row = filter_df_srs.iloc[[i]]
+                # Define Doctor Share
+                dr_share_amount = float(row["DOCTOR_SHARE"])
 
-            # Insert First doctor share and d
-            row["DOCTOR_SHARE"] = dr_share_amount * 0.5
+                # Insert First doctor share and d
+                row["DOCTOR_SHARE"] = dr_share_amount * 0.5
 
-            # Upack index value
-            index = "".join(str(elem) for i, elem in enumerate(row.index))
-            dataframe.at[int(index), "DOCTOR_SHARE"] = ""
-            dataframe = self.concat_dataframes(dataframe, row)
+                # Upack index value
+                index = "".join(str(elem) for i, elem in enumerate(row.index))
+                dataframe.at[int(index), "DOCTOR_SHARE"] = ""
+                dataframe = self.concat_dataframes(dataframe, row)
 
-            # TO find the order doctor in Radiation department and add his name and share in the Dataframe
-            filter_df = dataframe[
-                dataframe["EPISODE_ID"].isin([int(row["EPISODE_ID"])])
-            ]
-            filter_df = filter_df[
-                ~filter_df["DOCTOR_NAME"].isin(list(row["DOCTOR_NAME"]))
-            ]
-            row["DOCTOR_NAME"] = filter_df.iloc[1]["DOCTOR_NAME"]
-            dataframe = self.concat_dataframes(dataframe, row)
-            self.delete_dataframe(filter_df)
-            self.delete_dataframe(filter_df_srs)
-
-            return dataframe
+                # TO find the order doctor in Radiation department and add his name and share in the Dataframe
+                filter_df = dataframe[
+                    dataframe["EPISODE_ID"].isin([int(row["EPISODE_ID"])])
+                ]
+                filter_df = filter_df[
+                    ~filter_df["DOCTOR_NAME"].isin(list(row["DOCTOR_NAME"]))
+                ]
+                print(filter_df)
+                print(filter_df.shape)
+                if not filter_df.empty:
+                    print("Was not empty")
+                    row["DOCTOR_NAME"] = filter_df.iloc[0]["DOCTOR_NAME"]
+                    dataframe = self.concat_dataframes(dataframe, row)
+        try:
+            del filter_df
+        except Exception:
+            pass
+        try:
+            del filter_df_srs
+        except Exception:
+            pass
+            
+        return dataframe
 
     def check_peadiatric(self, dataframe):
+        df_filter=""
         # Filter Only Peadiatric Fe
         pead_filter_df = dataframe[dataframe["SERVICE_DESC"].isin(["Paediatrican Fe"])]
 
@@ -311,9 +323,14 @@ class Support:
                         dataframe.at[
                             int(index), "COMMENTS"
                         ] = f"Changed from {old_dr_name} to {new_dr_name}"
-
-        self.delete_dataframe(pead_filter_df)
-        self.delete_dataframe(df_filter)
+        try:
+            del pead_filter_df
+        except Exception:
+            pass
+        try:
+            del df_filter
+        except Exception:
+            pass
         return dataframe
 
     def ehc_patient_working(self, dataframe, doctors_list_df,from_date,to_date):
@@ -338,8 +355,10 @@ class Support:
         )
 
         dataframe = self.concat_dataframes(dataframe, ehc_df)
-
-        ehc_df = self.delete_dataframe(ehc_df)
+        try:
+            del ehc_df
+        except Exception:
+            pass
         return dataframe
 
     def rh_working(self, rh_dataframe, main_dataframe):
@@ -382,6 +401,8 @@ class Support:
 
     # Prototype not in use
     def cosmetic_service_deductions(self, dataframe):
+        tax_df = ""
+        all_entery_of_episode =""
         # Defining unique episode id uising set
         episode_id = set(dataframe["EPISODE_ID"].values.astype(str))
 
@@ -419,8 +440,14 @@ class Support:
                     dataframe.at[i, "COMMENTS"] = f"Changed from {dr_share}"
 
         # Garbage Collection
-        tax_df = self.delete_dataframe(tax_df)
-        all_entery_of_episode = self.delete_dataframe(all_entery_of_episode)
+        try:
+            del tax_df
+        except Exception:
+            pass
+        try:
+            del all_entery_of_episode
+        except Exception:
+            pass
 
         return dataframe
 
@@ -462,7 +489,7 @@ class Support:
                 [
                     data_tuple[1]
                     for data, _ in [
-                        db.run_query(sql_qurey.format(variable=f"'{patient_id}'",variable1=f"'{episode_id}'"))
+                        db.run_query_without_self_close_db(sql_qurey.format(variable=f"'{patient_id}'",variable1=f"'{episode_id}'"))
                         for patient_id, episode_id in zip(
                             df_filtered["PATIENT_ID"].tolist(),
                             df_filtered["EPISODE_ID"].tolist(),
@@ -549,10 +576,10 @@ class Support:
             ftp.storbinary(f"STOR {file_name}", file)
         ftp.quit()
 
-    def send_email_user(self,excel_file_path,user,from_date,to_date,msg="File Access",subject=None):
+    def send_email_user(self,excel_file_path,user_email,from_date,to_date,msg="File Access",subject=None):
         email_config = {
             "send_from": "Ahmed Qureshi <ahmed.qureshi@kokilabenhospitals.com>",
-            "send_to": user.email,
+            "send_to": user_email,
             "send_to_cc": "ahmed.qureshi@kokilabenhospitals.com",
             "subject": f"Automated Email -- Doctors KD Report --- From : {from_date} - To : {to_date}",
             "text": f"""
@@ -616,6 +643,8 @@ class Support:
         db = Ora()
         data, column = db.run_query_with_none_value(sql_qurey)
         df_dp_ip_kh = pd.DataFrame(data=data, columns=list(column))
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        # df_dp_ip_kh = pd.read_excel(f"{current_dir}/resources/ip_payout.xlsx")
         return df_dp_ip_kh
     
     def get_op_kh_data(self,from_date,to_date):
@@ -624,13 +653,16 @@ class Support:
         db = Ora()
         data, column = db.run_query_with_none_value(sql_qurey)
         df_dp_op_kh = pd.DataFrame(data=data, columns=list(column))
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        # df_dp_op_kh = pd.read_excel(f"{current_dir}/resources/op_payout.xlsx")
         return df_dp_op_kh
 
 
 
 
 def post_files_to_uploaded_folder(file_name,file):
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploaded_files', file_name)
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'uploaded_files', file_name)
     if os.path.exists(data_path):
             os.remove(data_path)
     # Save rh_data in ../uploaded_files directory and replace if already exists

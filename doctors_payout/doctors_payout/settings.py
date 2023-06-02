@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-+bcwyvx1q9)xm@0almlqth6hcyx0$&d0f03iukbi=c&72fpr^o"
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# # DEBUG = True
 DEBUG = False
 
 
@@ -34,12 +35,10 @@ ALLOWED_HOSTS = [
     "http://127.0.0.1",
     "http://localhost",
     "http://172.20.100.81",
-    "http://localhost:8004",
-    "http://172.20.100.81:8004",
-    "http://localhost:9004",
-    "http://172.20.100.81:9004",
+    "http://localhost:8007",
+    "http://172.20.100.81:8007",
     "http://172.20.200.40",
-    "http://www.kdahlinux.com:8004",
+    "http://www.kdahlinux.com:8007",
 ]
 
 
@@ -48,12 +47,10 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1",
     "http://localhost",
     "http://172.20.100.81",
-    "http://localhost:8004",
-    "http://172.20.100.81:8004",
-    "http://localhost:9004",
-    "http://172.20.100.81:9004",
+    "http://localhost:8007",
+    "http://172.20.100.81:8007",
     "http://72.20.200.40",
-    "http://www.kdahlinux.com:8004",
+    "http://www.kdahlinux.com:8007",
 ]
 
 
@@ -163,15 +160,22 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:5173",
+    "http://172.20.100.81:8007",
+    "http://localhost:8007",
+    "http://0.0.0.0:8007",
+
 ]
 # CSRF_COOKIE_SECURE = False
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
+    "http://localhost:5173",
+    "http://172.20.100.81:8007",
+    "http://localhost:8007",
+    "http://0.0.0.0:8007",
 ]
 CORS_ALLOW_CREDENTIALS = True
 # CSRF_COOKIE_HTTPONLY = False    

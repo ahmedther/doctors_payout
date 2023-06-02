@@ -107,18 +107,18 @@ export async function sendExcelAndForms(formData) {
 }
 
 
-export function getUserID() {
+export function getCookieValue(serach_query) {
     const cookies = document.cookie.split(';');
-    let userId = null;
+    let query_value = null;
 
     for (let i = 0; i < cookies.length; i++) {
         const cookie = cookies[i].trim();
-        if (cookie.startsWith('userID=')) {
-            userId = cookie.substring('userID='.length);
+        if (cookie.startsWith(serach_query)) {
+            query_value = cookie.substring(serach_query.length);
             break;
         }
     }
-    return userId;
+    return query_value;
 }
 
 

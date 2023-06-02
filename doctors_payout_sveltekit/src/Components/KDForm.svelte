@@ -1,7 +1,8 @@
 <script>
     import { Feather } from "sveltekit-feather-icons";
     import { createEventDispatcher } from "svelte";
-    import { getUserID } from "../js/helper.js";
+    import { getCookieValue } from "../js/helper.js";
+    import ConfirmOverlay from "./ConfirmOverlay.svelte";
     export let error = false;
     export let errorMessage = null;
 
@@ -11,6 +12,8 @@
     let rhDataFileName;
     let transplantData;
     let transplantFileName;
+    let confirmMsgDisplay = false;
+    let ConfirmMessage;
 
     const dispatch = createEventDispatcher();
 
@@ -42,20 +45,24 @@
 
         // Check if rhData is an Excel file
         if (!rhData) {
-            errorMessage =
-                "Please attach a valid Excel file for RH Navi Mumbai Data.";
-            error = true;
+            ConfirmMessage =
+                "You have not uploaded the RH / Navi Mumbai KH data. If you dont upload this file we will not processs this part of Doctors KD Automation.";
+            confirmMsgDisplay = true;
             return false;
         }
 
         // Check if transplantData is an Excel file
         if (!transplantData) {
-            errorMessage =
-                "Please attach a valid Excel file for Transplant Data.";
-            error = true;
+            ConfirmMessage =
+                "You have not uploaded the Transplant data. If you dont upload this file we will not processs this part of Doctors KD Automation.";
+            confirmMsgDisplay = true;
             return false;
         }
-        const userID = getUserID();
+        submit_dispatch();
+    }
+
+    function submit_dispatch() {
+        const userID = getCookieValue("userID=");
         dispatch("submit", {
             from_date,
             to_date,
@@ -64,6 +71,7 @@
             userID,
         });
     }
+
     function errordisplay() {
         if (!errorMessage) return;
         const message = errorMessage;
@@ -100,6 +108,13 @@
     }
 </script>
 
+{#if confirmMsgDisplay}
+    <ConfirmOverlay
+        {ConfirmMessage}
+        on:cancel={() => (confirmMsgDisplay = false)}
+        on:confirm={submit_dispatch}
+    />
+{/if}
 <div class="gs-neumorphic-main-card-outer-container">
     <div class="gs-neumorphic-main-card-container">
         <div class="gs-neumorphic-main-card">

@@ -20,6 +20,9 @@
         document.cookie = `userName=${userName}; expires=${expirationDate.toUTCString()}; path=/`;
         document.cookie = `authToken=${authToken}; expires=${expirationDate.toUTCString()}; path=/`;
         document.cookie = `userID=${userID}; expires=${expirationDate.toUTCString()}; path=/`;
+        document.cookie = `emailId=${
+            e.detail.email_id
+        }; expires=${expirationDate.toUTCString()}; path=/`;
     }
 
     onMount(() => {

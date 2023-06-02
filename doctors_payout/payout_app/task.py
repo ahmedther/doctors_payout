@@ -7,7 +7,7 @@ from payout_app.postgress_config import PostgressDB
 from payout_app.excel_maker import Support
 
 @shared_task
-def process_kd(from_date,to_date,rh_data,transplant_data,user):
+def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
     try:
         from_date = datetime.strptime(from_date, '%Y-%m-%d').strftime('%d-%b-%Y')
         to_date = datetime.strptime(to_date, '%Y-%m-%d').strftime('%d-%b-%Y')
@@ -37,9 +37,12 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user):
         # # #Step 1 : Sub-Section 3 Combine Dataframe
         main_dataframe = sup.concat_dataframes(df_dp_ip_kh, df_dp_op_kh)
 
+        main_dataframe = sup.add_new_column(
+            main_dataframe, "COMMENTS", ""
+        )
         # # Delete Unused Data Frame
-        df_dp_ip_kh = sup.delete_dataframe(df_dp_ip_kh)
-        df_dp_op_kh = sup.delete_dataframe(df_dp_op_kh)
+        del df_dp_ip_kh
+        del df_dp_op_kh 
 
         # #Step 1 : Sub-Section 4  Get Doctor list form Postgres Database
         postDB = PostgressDB()
@@ -60,41 +63,42 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user):
 
         # #Step 1 : Sub-Section 5 RH Dataframe
         # df_dp_rh = pd.read_excel(f"{current_dir}/viren_ref/RH_Data.xlsx")
-        df_dp_rh = pd.read_excel(rh_data)
-        df_dp_rh = sup.add_new_column(
-            df_dp_rh, "SOURCE OF DATA", "RH DATA IP Admitting Doc wise rev rep"
-        )
+        if rh_data:
+            df_dp_rh = pd.read_excel(rh_data)
+            df_dp_rh = sup.add_new_column(
+                df_dp_rh, "SOURCE OF DATA", "RH DATA IP Admitting Doc wise rev rep"
+            )
 
-        # RH Dataframe column rename to match with main_dataframe
-        df_dp_rh = sup.rename_columns(
-            df_dp_rh,
-            {
-                "BILLING_CLASS": "PATIENT_TYPE",
-                "GROSS_AMT": "GROSS_AMOUNT",
-                "NET_AMT": "NET_AMOUNT",
-            },
-        )
+            # RH Dataframe column rename to match with main_dataframe
+            df_dp_rh = sup.rename_columns(
+                df_dp_rh,
+                {
+                    "BILLING_CLASS": "PATIENT_TYPE",
+                    "GROSS_AMT": "GROSS_AMOUNT",
+                    "NET_AMT": "NET_AMOUNT",
+                },
+            )
 
-        # Delete Extra Column
-        df_dp_rh = sup.delete_columns(df_dp_rh, ["SERVICE_GROUP"])
+            # Delete Extra Column
+            df_dp_rh = sup.delete_columns(df_dp_rh, ["SERVICE_GROUP"])
 
 
-        ##################################################################################################################
-        # Step 6
-        ##################################################################################################################
+            ##################################################################################################################
+            # Step 6
+            ##################################################################################################################
 
-        # RH DataFrame Working
-        df_dp_rh = sup.rh_working(df_dp_rh, main_dataframe)
+            # RH DataFrame Working
+            df_dp_rh = sup.rh_working(df_dp_rh, main_dataframe)
 
-        ##################################################################################################################
-        # End Step 6
-        ##################################################################################################################
+            ##################################################################################################################
+            # End Step 6
+            ##################################################################################################################
 
-        # Concatanate MainDataframe and RH Dataframe
-        main_dataframe = sup.concat_dataframes(main_dataframe, df_dp_rh)
+            # Concatanate MainDataframe and RH Dataframe
+            main_dataframe = sup.concat_dataframes(main_dataframe, df_dp_rh)
 
-        # Delete unused dataframe
-        df_dp_rh = sup.delete_dataframe(df_dp_rh)
+            # Delete unused dataframe
+            df_dp_rh = sup.delete_dataframe(df_dp_rh)
 
         # Add Doctor Group Column from Doctor List and Delete Doctor List Column
         # Rename to Match Main Dataframe
@@ -124,53 +128,54 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user):
         # transplant_dataframe = pd.read_excel(
         #     f"{current_dir}/viren_ref/transplant.xlsx"
         # )
-        transplant_dataframe = pd.read_excel(transplant_data)
-        transplant_dataframe = transplant_dataframe.dropna()
-        transp_df_uhid = list(transplant_dataframe["UHID"]) + list(
-            transplant_dataframe["UHID.1"]
-        )
+        if transplant_data:
+            transplant_dataframe = pd.read_excel(transplant_data)
+            transplant_dataframe = transplant_dataframe.dropna()
+            transp_df_uhid = list(transplant_dataframe["UHID"]) + list(
+                transplant_dataframe["UHID.1"]
+            )
 
-        # Calculations for HPB Transplant
-        postDB = PostgressDB()
-        transplant_doctor_data, column_name = postDB.transplant_doctors(
-            "HPB and Liver Transplant"
-        )
-        transp_df = pd.DataFrame(
-            data=transplant_doctor_data,
-            columns=list(column_name),
-        )
+            # Calculations for HPB Transplant
+            postDB = PostgressDB()
+            transplant_doctor_data, column_name = postDB.transplant_doctors(
+                "HPB and Liver Transplant"
+            )
+            transp_df = pd.DataFrame(
+                data=transplant_doctor_data,
+                columns=list(column_name),
+            )
 
-        main_dataframe = sup.transplant_working(
-            main_dataframe, transp_df, transp_df_uhid
-        )
+            main_dataframe = sup.transplant_working(
+                main_dataframe, transp_df, transp_df_uhid
+            )
 
-        # Calculations for Liver
-        postDB = PostgressDB()
-        transplant_doctor_data, column_name = postDB.transplant_doctors("UROLOGY")
-        # sup.excel_generator(excel_data=main_dataframe, page_name="test")
-        transp_df = pd.DataFrame(
-            data=transplant_doctor_data,
-            columns=list(column_name),
-        )
+            # Calculations for Liver
+            postDB = PostgressDB()
+            transplant_doctor_data, column_name = postDB.transplant_doctors("UROLOGY")
+            # sup.excel_generator(excel_data=main_dataframe, page_name="test")
+            transp_df = pd.DataFrame(
+                data=transplant_doctor_data,
+                columns=list(column_name),
+            )
 
-        main_dataframe = sup.transplant_working(
-            main_dataframe, transp_df, transp_df_uhid
-        )
+            main_dataframe = sup.transplant_working(
+                main_dataframe, transp_df, transp_df_uhid
+            )
 
-        # Calculations for Cardiac
-        postDB = PostgressDB()
-        transplant_doctor_data, column_name = postDB.transplant_doctors("CARDIOLOGY")
-        # sup.excel_generator(excel_data=main_dataframe, page_name="test")
-        transp_df = pd.DataFrame(
-            data=transplant_doctor_data,
-            columns=list(column_name),
-        )
+            # Calculations for Cardiac
+            postDB = PostgressDB()
+            transplant_doctor_data, column_name = postDB.transplant_doctors("CARDIOLOGY")
+            # sup.excel_generator(excel_data=main_dataframe, page_name="test")
+            transp_df = pd.DataFrame(
+                data=transplant_doctor_data,
+                columns=list(column_name),
+            )
 
-        main_dataframe = sup.transplant_working(
-            main_dataframe, transp_df, transp_df_uhid
-        )
-        transp_df = sup.delete_dataframe(transp_df)
-        transplant_dataframe = sup.delete_dataframe(transplant_dataframe)
+            main_dataframe = sup.transplant_working(
+                main_dataframe, transp_df, transp_df_uhid
+            )
+            transp_df = sup.delete_dataframe(transp_df)
+            transplant_dataframe = sup.delete_dataframe(transplant_dataframe)
 
         ##################################################################################################################
         # Step 3
@@ -198,7 +203,6 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user):
         ##################################################################################################################
         # Column REV_STREAM
         main_dataframe = sup.rev_coloumn_data(main_dataframe)
-
         ##################################################################################################################
         # Step 8
         ##################################################################################################################
@@ -214,8 +218,8 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user):
 
         excel_file_path = sup.excel_generator(excel_data=main_dataframe, page_name="main_dataframe")
         
-        sup.send_email_user(excel_file_path,user,from_date,to_date)
+        sup.send_email_user(excel_file_path,user_email,from_date,to_date)
     except Exception as e:
         sup = Support()
         subject = f"❌ Unfortunately!!! An error has occurred during the processing of your request ❌"
-        sup.send_email_user(excel_file_path=None,user=user,from_date=from_date,to_date=to_date,msg=e,subject=subject)
+        sup.send_email_user(excel_file_path=None,user_email=user_email,from_date=from_date,to_date=to_date,msg=e,subject=subject)

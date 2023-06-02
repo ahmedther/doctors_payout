@@ -4,7 +4,7 @@ LABEL maintainer='ahmed'
 
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /doctor_payout
+WORKDIR /doctors_payout
 
 COPY ./ ./
 
@@ -15,9 +15,9 @@ RUN apt update -y --no-install-recommends \
     && python3 -m venv /py \
     && /py/bin/pip install --upgrade pip \
     && /py/bin/pip install --no-cache --no-cache-dir -r ./requirements.txt  \
-    && chmod -R 777 /doctor_payout \
+    && chmod -R 777 /doctors_payout \
     && mkdir /var/log/uwsgi \
-    && touch /var/log/uwsgi/doctor_payout.log  \ 
+    && touch /var/log/uwsgi/doctors_payout.log  \ 
     && mkdir -p /cx_oracle \
     && cd /cx_oracle \
     && curl -o instantclient-basiclite-linux.x64-21.9.0.0.0dbru.zip https://download.oracle.com/otn_software/linux/instantclient/219000/instantclient-basiclite-linux.x64-21.9.0.0.0dbru.zip \
@@ -37,7 +37,7 @@ RUN apt update -y --no-install-recommends \
 
 ENV LD_LIBRARY_PATH=/cx_oracle/instantclient_21_9
 
-ENV PATH="/doctor_payout/scripts:/py/bin:$PATH"
+ENV PATH="/doctors_payout/scripts:/py/bin:$PATH"
 
 
 

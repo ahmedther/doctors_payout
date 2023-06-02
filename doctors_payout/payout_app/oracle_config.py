@@ -428,12 +428,38 @@ class Ora:
 
 
     def run_query(self, sql_qurey):
+        with self.pool.acquire() as connection:
+            cursor = connection.cursor()
+            cursor.execute(sql_qurey)
+            result = cursor.fetchall()
+            column_name = [i[0] for i in cursor.description]
+
+        if self.cursor:
+            self.cursor.close()
+        if self.ora_db:
+            self.ora_db.close()
+
+        return result, column_name
+
+    def run_query_without_self_close_db(self, sql_qurey):
+        with self.pool.acquire() as connection:
+            cursor = connection.cursor()
+            cursor.execute(sql_qurey)
+            result = cursor.fetchall()
+            column_name = [i[0] for i in cursor.description]
+
+        return result, column_name
+    
+    def run_query_with_none_value(self, sql_qurey,none_value=None):
+        try:
+            
             
             with self.pool.acquire() as connection:
                 cursor = connection.cursor()
-                for result in cursor.execute(sql_qurey):
-                    result = cursor.fetchall()
+                cursor.execute(sql_qurey,[none_value])
+                result = cursor.fetchall()
                 column_name = [i[0] for i in cursor.description]
+                
 
             if self.cursor:
                 self.cursor.close()
@@ -441,24 +467,7 @@ class Ora:
                 self.ora_db.close()
 
             return result, column_name
-    
-    def run_query_with_none_value(self, sql_qurey,none_value=None):
-            try:
-                print("Started")
-                with self.pool.acquire() as connection:
-                    cursor = connection.cursor()
-                    for result in cursor.execute(sql_qurey,[none_value]):
-                        result = cursor.fetchall()
-                    column_name = [i[0] for i in cursor.description]
-                print("Ended")
-
-                if self.cursor:
-                    self.cursor.close()
-                if self.ora_db:
-                    self.ora_db.close()
-
-                return result, column_name
-            except Exception as e:
+        except Exception as e:
                 print(f"Error : \n {str(e)}")
 
 if __name__ == "__main__":

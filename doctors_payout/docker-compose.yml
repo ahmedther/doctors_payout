@@ -5,7 +5,7 @@ services:
     image: doctor_payout_image
     container_name: doctor_payout_container
     volumes:
-      - .:/doctor_payout
+      - .:/doctors_payout
     ports:
       - 8008:8008
     depends_on:
@@ -13,11 +13,11 @@ services:
 
   doctor_payout_node:
     build:
-      context: ../doctors_payout_svelte
+      context: ../doctors_payout_sveltekit
     restart: always
     image: doctor_svelte_image
     container_name: doctor_payout_svelte_container
     volumes:
-      - ../doctors_payout_svelte:/doctor_payout_sveltekit
-    ports:  
+      - ../doctors_payout_sveltekit:/doctors_payout_sveltekit
+    ports:
       - 8007:8007

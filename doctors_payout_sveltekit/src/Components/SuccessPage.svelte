@@ -1,11 +1,13 @@
 <script>
     import { Feather } from "sveltekit-feather-icons";
     import { createEventDispatcher } from "svelte";
+    import { getCookieValue } from "../js/helper.js";
+    import { onMount } from "svelte";
 
     export let emailId;
 
     const dispatch = createEventDispatcher();
-
+    onMount(() => (emailId = getCookieValue("emailId=")));
     function logout() {
         // Clear the "userName" cookie
         document.cookie =
@@ -16,6 +18,8 @@
             "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         document.cookie =
             "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie =
+            "emailId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
         dispatch("logout");
     }
