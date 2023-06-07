@@ -18,3 +18,4 @@ doctors_payout/payout_app/resources/My Transplant Working.xlsx
 pywin32_postinstall.py
 pywin32_testall.py
 vba_extract.py
+postgresql

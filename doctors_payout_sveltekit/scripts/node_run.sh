@@ -3,7 +3,7 @@
 set -e
 
 # npm run dev -- --port 8007
-
+ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
 
 npm ci
 

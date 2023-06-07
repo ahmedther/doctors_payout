@@ -6,10 +6,12 @@ services:
     container_name: doctor_payout_container
     volumes:
       - .:/doctors_payout
+    env_file:
+      - .env
     ports:
       - 8008:8008
     depends_on:
-      - doctor_payout_node
+      - postgres
 
   doctor_payout_node:
     build:
@@ -19,5 +21,21 @@ services:
     container_name: doctor_payout_svelte_container
     volumes:
       - ../doctors_payout_sveltekit:/doctors_payout_sveltekit
+    env_file:
+      - .env
     ports:
       - 8007:8007
+    depends_on:
+      - app
+
+  postgres:
+    build:
+      context: ./postgresql
+    image: doctors_payout_postgresql_image
+    container_name: doctors_payout_postgresql_container
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    ports:
+    - 5432:5432
+    env_file:
+      - .env
