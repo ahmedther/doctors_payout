@@ -19,3 +19,4 @@ pywin32_postinstall.py
 pywin32_testall.py
 vba_extract.py
 postgresql
+/doctors_payout/static

@@ -6,16 +6,14 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /doctors_payout
 
-COPY ./requirements.txt ./requirements.txt
+COPY ./requirements.txt ./
 
 
-RUN apt update -y --no-install-recommends \
-    && apt upgrade -y --no-install-recommends \
-    && apt install libpq-dev gcc curl unzip libaio1  -y \ 
+RUN apt update -y \
+    && apt install  libpq-dev gcc curl unzip libaio1  -y \ 
     && python3 -m venv /py \
     && /py/bin/pip install --upgrade pip \
     && /py/bin/pip install --no-cache --no-cache-dir -r ./requirements.txt  \
-    && chmod -R 777 /doctors_payout \
     && mkdir -p /cx_oracle \
     && cd /cx_oracle \
     && curl -o instantclient-basiclite-linux.x64-21.9.0.0.0dbru.zip https://download.oracle.com/otn_software/linux/instantclient/219000/instantclient-basiclite-linux.x64-21.9.0.0.0dbru.zip \
@@ -37,14 +35,15 @@ COPY --from=builder /cx_oracle /cx_oracle
 COPY --from=builder /etc/ld.so.conf.d/oracle-instantclient.conf /etc/ld.so.conf.d/oracle-instantclient.conf
 COPY ./ ./
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 rabbitmq-server \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*  \
-    && ldconfig \ 
-    && ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone \ 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 rabbitmq-server \
+    && ldconfig \
+    && ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone \
     && mkdir /var/log/uwsgi \
-    && touch /var/log/uwsgi/doctors_payout.log 
+    && touch /var/log/uwsgi/doctors_payout.log \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt autoremove -y  
 
 
 LABEL maintainer='ahmed'

@@ -34,7 +34,7 @@ DEBUG = bool(os.getenv("DEBUG", False))
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
-# CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
 
 
 # Application definition
@@ -141,20 +141,24 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_ALL_ORIGINS = False
 
-CORS_ORIGIN_WHITELIST = [
-    "http://localhost:5173",
-    "http://172.20.100.81:8007",
-    "http://localhost:8007",
-    "http://0.0.0.0:8007",
-]
+
+CORS_ORIGIN_WHITELIST = os.getenv("CORS_ORIGIN_WHITELIST", "").split(",")
+
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+# CORS_ORIGIN_WHITELIST = [
+#     "http://localhost:5173",
+#     "http://172.20.100.81:8007",
+#     "http://localhost:8007",
+#     "http://0.0.0.0:8007",
+# ]
 # CSRF_COOKIE_SECURE = False
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://172.20.100.81:8007",
-    "http://localhost:8007",
-    "http://0.0.0.0:8007",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://172.20.100.81:8007",
+#     "http://localhost:8007",
+#     "http://0.0.0.0:8007",
+# ]
 CORS_ALLOW_CREDENTIALS = True
 # CSRF_COOKIE_HTTPONLY = False
 CORS_ALLOW_METHODS = (
