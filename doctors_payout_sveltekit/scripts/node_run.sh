@@ -2,7 +2,6 @@
 
 set -e
 
-# npm run dev -- --port 8007
 ln -snf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime && echo Asia/Kolkata > /etc/timezone
 
 npm ci
@@ -10,6 +9,8 @@ npm ci
 npm run build
 
 node server.js
+
+# npm run dev -- --port 8007
 
 # node /doctors_payout_sveltekit/build/index.js
 

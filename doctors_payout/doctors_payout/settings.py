@@ -12,9 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
-from django.db import connections
-from django.db.utils import OperationalError
-from time import sleep
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,15 +29,14 @@ SECRET_KEY = "django-insecure-+bcwyvx1q9)xm@0almlqth6hcyx0$&d0f03iukbi=c&72fpr^o
 DEBUG = bool(os.getenv("DEBUG", False))
 
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-
-
-CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "*").split(",")
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     "payout_app.apps.PayoutAppConfig",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -47,7 +44,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -138,27 +134,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ORIGIN_ALLOW_ALL = True
 
 
-CORS_ORIGIN_WHITELIST = os.getenv("CORS_ORIGIN_WHITELIST", "").split(",")
+CORS_ORIGIN_WHITELIST = os.environ.get("CORS_ORIGIN_WHITELIST", "*").split(",")
+CSRF_COOKIE_SECURE = False
 
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-# CORS_ORIGIN_WHITELIST = [
-#     "http://localhost:5173",
-#     "http://172.20.100.81:8007",
-#     "http://localhost:8007",
-#     "http://0.0.0.0:8007",
-# ]
-# CSRF_COOKIE_SECURE = False
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS", "*").split(",")
 
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://172.20.100.81:8007",
-#     "http://localhost:8007",
-#     "http://0.0.0.0:8007",
-# ]
 CORS_ALLOW_CREDENTIALS = True
 # CSRF_COOKIE_HTTPONLY = False
 CORS_ALLOW_METHODS = (

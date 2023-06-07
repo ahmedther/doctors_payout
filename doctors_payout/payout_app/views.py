@@ -24,52 +24,74 @@ from payout_app.excel_maker import post_files_to_uploaded_folder
 
 @csrf_exempt
 def index(request):
-    if request.method == 'GET':
+    if request.method == "GET":
         return render(request, "payout_app/index.html")
-    
+
     if request.method == "POST":
-        try:
-            from_date = request.POST['from_date']
-            to_date = request.POST['to_date']
+        # try:
+        from_date = request.POST["from_date"]
+        to_date = request.POST["to_date"]
 
-            #Serializer User to make it go through asa parametere in process_kd.delay
-            user_email = User.objects.get(id=request.POST['userID']).email
+        # Serializer User to make it go through asa parametere in process_kd.delay
+        user_email = User.objects.get(id=request.POST["userID"]).email
 
-            rh_data = request.FILES.get('rh_data')
-            rh_data_path = post_files_to_uploaded_folder(f'rh_data.{str(rh_data.name).split(".")[-1]}', rh_data) if rh_data else None
+        rh_data = request.FILES.get("rh_data")
+        rh_data_path = (
+            post_files_to_uploaded_folder(
+                f'rh_data.{str(rh_data.name).split(".")[-1]}', rh_data
+            )
+            if rh_data
+            else None
+        )
 
-            transplant_data = request.FILES.get('transplantData')
-            transplant_data_path = post_files_to_uploaded_folder(f'transplant_data.{str(transplant_data.name).split(".")[-1]}', transplant_data) if transplant_data else None
+        transplant_data = request.FILES.get("transplantData")
+        transplant_data_path = (
+            post_files_to_uploaded_folder(
+                f'transplant_data.{str(transplant_data.name).split(".")[-1]}',
+                transplant_data,
+            )
+            if transplant_data
+            else None
+        )
 
-            
-            process_kd.delay(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
-            # process_kd(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
-            return JsonResponse({'success': 'Success', "email_Id": user_email}, status=200)
+        process_kd.delay(
+            from_date=from_date,
+            to_date=to_date,
+            rh_data=rh_data_path,
+            transplant_data=transplant_data_path,
+            user_email=user_email,
+        )
+        # process_kd(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
+        return JsonResponse({"success": "Success", "email_Id": user_email}, status=200)
 
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+    # except Exception as e:
+    #     return JsonResponse({'error': str(e)}, status=400)
+
 
 # @csrf_exempt
 def check_task_status(request):
     try:
-        app = celery.Celery('doctors_payout')
+        app = celery.Celery("doctors_payout")
         active_tasks = app.control.inspect().active()
         if active_tasks and any(active_tasks.values()):
-            return JsonResponse({'running': 'A report is already being generated. Try again later.'}, status=200)
+            return JsonResponse(
+                {"running": "A report is already being generated. Try again later."},
+                status=200,
+            )
         else:
-            return JsonResponse({'not_running': 'No task ID found.'}, status=200)
+            return JsonResponse({"not_running": "No task ID found."}, status=200)
 
     except Exception as e:
         # Return error message with 400 status code
-        return JsonResponse({'error': str(e)}, status=400)
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 @csrf_exempt
 def login_page(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         data = json.loads(request.body)
-        username = data.get('username')
-        password = data.get('password')
+        username = data.get("username")
+        password = data.get("password")
 
         user = authenticate(
             request,
@@ -78,12 +100,24 @@ def login_page(request):
         )
 
         if user is None:
-            return JsonResponse({'error': 'Wrong User ID or Password. Try again or call 33333 /33330 to reset it'}, status=401)
-        
+            return JsonResponse(
+                {
+                    "error": "Wrong User ID or Password. Try again or call 33333 /33330 to reset it"
+                },
+                status=401,
+            )
+
         login(request, user)
-        return JsonResponse({'success': request.user.get_full_name().title(),"user_id":user.id,"token":default_token_generator.make_token(user),"email_id":user.email })    
+        return JsonResponse(
+            {
+                "success": request.user.get_full_name().title(),
+                "user_id": user.id,
+                "token": default_token_generator.make_token(user),
+                "email_id": user.email,
+            }
+        )
     else:
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+        return JsonResponse({"error": "Method not allowed"}, status=405)
 
 
 @login_required(login_url="login_page")
@@ -94,61 +128,55 @@ def logout_user(request):
 
 def get_csrf_token(request):
     csrf_token = csrf.get_token(request)
-    return JsonResponse({'csrfToken': csrf_token})
+    return JsonResponse({"csrfToken": csrf_token})
+
 
 class FileListView(View):
     def get(self, request):
         try:
-            directory = os.path.join(settings.BASE_DIR, 'payout_app', 'excel_files')
+            directory = os.path.join(settings.BASE_DIR, "payout_app", "excel_files")
             files = os.listdir(directory)
             # Sort files by creation time in descending order
-            files.sort(key=lambda x: os.path.getctime(os.path.join(directory, x)), reverse=True)
+            files.sort(
+                key=lambda x: os.path.getctime(os.path.join(directory, x)), reverse=True
+            )
             # Configure pagination
             paginator = Paginator(files, 5)  # Display 10 files per page
-            page_number = request.GET.get('page', 1)
+            page_number = request.GET.get("page", 1)
             page_obj = paginator.get_page(page_number)
 
             file_urls = []
             for file_name in page_obj:
-                file_urls.append({
-                    'name': file_name,
-                    'url': request.build_absolute_uri(reverse('download', args=[file_name]))
-                })
+                file_urls.append(
+                    {
+                        "name": file_name,
+                        "url": request.build_absolute_uri(
+                            reverse("download", args=[file_name])
+                        ),
+                    }
+                )
 
             # Create response with paginated file list
             response_data = {
-                'files': file_urls,
-                'current_page': page_obj.number,
-                'num_pages': paginator.num_pages
-
+                "files": file_urls,
+                "current_page": page_obj.number,
+                "num_pages": paginator.num_pages,
             }
             return JsonResponse(response_data, status=200)
-        except  Exception as e:
-            return JsonResponse({'error': e}, status=405)
-        
+        except Exception as e:
+            return JsonResponse({"error": e}, status=405)
 
 
-
-    
 @csrf_exempt
 def download_file(request, file_name):
-    file_path = os.path.join(settings.BASE_DIR, 'payout_app', 'excel_files', file_name)
-    with open(file_path, 'rb') as file:
-        response = HttpResponse(file.read(), content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+    file_path = os.path.join(settings.BASE_DIR, "payout_app", "excel_files", file_name)
+    with open(file_path, "rb") as file:
+        response = HttpResponse(file.read(), content_type="application/octet-stream")
+        response["Content-Disposition"] = f'attachment; filename="{file_name}"'
         return response
 
 
-
-
-
-
-
-
-
-
-
-# @csrf_exempt    
+# @csrf_exempt
 # def login_page(request):
 #     if request.method == "GET":
 #         return render(request, "payout_app/login_page.html")
