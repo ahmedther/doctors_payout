@@ -5,41 +5,63 @@
   <title>Redirect Page</title>
   <style>
     body {
-      background-color: #f0f0f0;
+      background-color: #F0F2F5;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-    }
-
-    .container {
-      background-color: #f0f0f0;
-      box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.2), -8px -8px 16px rgba(255, 255, 255, 0.5);
-      border-radius: 10px;
-      padding: 30px;
-      text-align: center;
       font-family: Arial, sans-serif;
     }
 
+    .container {
+      background-color: #F0F2F5;
+      border-radius: 30px;
+      box-shadow: 12px 12px 24px #CBD2D9, -12px -12px 24px #FFFFFF;
+      padding: 40px;
+    }
+
     h1 {
+      text-align: center;
       font-size: 24px;
-      margin-bottom: 20px;
+      color: #333333;
     }
 
     p {
-      font-size: 18px;
+      text-align: center;
+      font-size: 16px;
+      color: #666666;
+    }
+
+    .button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4A90E2;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .button:hover {
+      background-color: #3582C4;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>This app is not accessible from here.</h1>
-    <p>Please proceed to <a id="redirectLink" href="http://172.20.100.81:8007">172.20.100.81:8007</a>.</p>
+    <p>Please proceed to <a id="redirectLink" href="{{SERVE_SVELTEKIT_ON}}">{{SERVE_SVELTEKIT_ON}}</a>.</p>
+    <a href="#" class="button">Proceed</a>
   </div>
-
+    
   <script>
+    var serveSveltekitOn = "{{ SERVE_SVELTEKIT_ON }}";
+
     setTimeout(function() {
-      window.location.href = "http://172.20.100.81:8007";
+      window.location.href = serveSveltekitOn;
     }, 5000);
   </script>
 </body>

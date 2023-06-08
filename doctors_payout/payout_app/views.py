@@ -25,7 +25,8 @@ from payout_app.excel_maker import post_files_to_uploaded_folder
 @csrf_exempt
 def index(request):
     if request.method == "GET":
-        return render(request, "payout_app/index.html")
+        context = {"SERVE_SVELTEKIT_ON": os.environ.get("SERVE_SVELTEKIT_ON")}
+        return render(request, "payout_app/index.html", context)
 
     if request.method == "POST":
         try:
