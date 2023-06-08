@@ -28,21 +28,26 @@ class Support:
         dataframe = pd.DataFrame()
         return dataframe
 
-    def excel_generator(self, excel_data, page_name):
+    def excel_generator(self, excel_data, page_name, from_date=None, to_date=None):
         # datetime object containing current date and time
         add_time_to_page = datetime.now()
 
         # dd/mm/YY H:M:S
         # Add time with miliseconds to avoid conflict with apache and nginx
-        add_time_to_page_string = add_time_to_page.strftime("%d-%b-%Y-%H-%M-%S-%f")
-        add_time_to_page_string = str(add_time_to_page_string)
+        if from_date and to_date:
+            add_time_to_page_string = f"{from_date}--TO--{to_date}"
+        else:
+            add_time_to_page_string = add_time_to_page.strftime("%d-%b-%Y-%H-%M-%S-%f")
+            add_time_to_page_string = str(add_time_to_page_string)
 
         # gives you location of manage.py
         current_dir = os.path.dirname(os.path.abspath(__file__))
         # write the print fuction in error log. Test on Apache reverse proxy but not on nginx
         # sys.stderr.write(excel_file_path)
 
-        excel_file_path = f"{current_dir}/excel_files/{page_name}-{add_time_to_page_string}.xlsx"
+        excel_file_path = (
+            f"{current_dir}/excel_files/{page_name}-{add_time_to_page_string}.xlsx"
+        )
 
         # creates a log file and report errors
         # logging.basicConfig(filename="report_error.log", level=logging.DEBUG)
@@ -257,11 +262,11 @@ class Support:
             del filter_df_srs
         except Exception:
             pass
-            
+
         return dataframe
 
     def check_peadiatric(self, dataframe):
-        df_filter=""
+        df_filter = ""
         # Filter Only Peadiatric Fe
         pead_filter_df = dataframe[dataframe["SERVICE_DESC"].isin(["Paediatrican Fe"])]
 
@@ -306,7 +311,9 @@ class Support:
 
                     # Check wheter doctor is a peads doctors
                     db = Ora()
-                    sql_qurey = Query.objects.get(query_name="Check Paediatric Doctors").query
+                    sql_qurey = Query.objects.get(
+                        query_name="Check Paediatric Doctors"
+                    ).query
                     sql_qurey = sql_qurey.format(variable=f"'{pr_number}'")
                     find_if_paeds, _ = db.run_query(sql_qurey)
                     # find_if_paeds = db.check_dr_pead(pr_number_df)
@@ -333,9 +340,9 @@ class Support:
             pass
         return dataframe
 
-    def ehc_patient_working(self, dataframe, doctors_list_df,from_date,to_date):
+    def ehc_patient_working(self, dataframe, doctors_list_df, from_date, to_date):
         sql_qurey = Query.objects.get(query_name="Doctors Share on EHC").query
-        sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
+        sql_qurey = sql_qurey.format(from_date=f"'{from_date}'", to_date=f"'{to_date}'")
         db = Ora()
         ehc_data, ehc_column = db.run_query(sql_qurey)
         # ehc_data, ehc_column = db.ehc_dr_share("01-Aug-2022", "31-Aug-2022")
@@ -402,7 +409,7 @@ class Support:
     # Prototype not in use
     def cosmetic_service_deductions(self, dataframe):
         tax_df = ""
-        all_entery_of_episode =""
+        all_entery_of_episode = ""
         # Defining unique episode id uising set
         episode_id = set(dataframe["EPISODE_ID"].values.astype(str))
 
@@ -413,7 +420,7 @@ class Support:
             ].values.astype(str)[0]
             # Running Query
             sql_qurey = Query.objects.get(query_name="Service Check on Cosmetic").query
-            sql_qurey = sql_qurey.format(variable=f"'{uhid}'",variable1=f"'{episode}'")
+            sql_qurey = sql_qurey.format(variable=f"'{uhid}'", variable1=f"'{episode}'")
             db = Ora()
             tax_data, column_name = db.run_query(sql_qurey)
             # tax_data, column_name = db.service_check_on_cosmetic(uhid, episode)
@@ -481,7 +488,6 @@ class Support:
 
         df_filtered = dataframe[dataframe["EPISODE_ID"].isin(episode_id)]
 
-
         sql_qurey = Query.objects.get(query_name="Service Check on Cosmetic").query
         db = Ora()
         tax_data = np.array(
@@ -489,7 +495,11 @@ class Support:
                 [
                     data_tuple[1]
                     for data, _ in [
-                        db.run_query_without_self_close_db(sql_qurey.format(variable=f"'{patient_id}'",variable1=f"'{episode_id}'"))
+                        db.run_query_without_self_close_db(
+                            sql_qurey.format(
+                                variable=f"'{patient_id}'", variable1=f"'{episode_id}'"
+                            )
+                        )
                         for patient_id, episode_id in zip(
                             df_filtered["PATIENT_ID"].tolist(),
                             df_filtered["EPISODE_ID"].tolist(),
@@ -553,7 +563,7 @@ class Support:
 
         return dataframe
 
-    def elapsed_time(self,func):
+    def elapsed_time(self, func):
         def wrapper(*args, **kwargs):
             start_time = time.perf_counter()
             result = func(*args, **kwargs)
@@ -565,8 +575,16 @@ class Support:
 
     def get_container_ip(self):
         return socket.gethostbyname(socket.gethostname())
-    
-    def upload_file_to_ftp(self,file_path, ftp_server="172.20.200.135", ftp_username="ftpuser", ftp_password="kh@12345", ftp_folder="d_excel", ftp_port=21):
+
+    def upload_file_to_ftp(
+        self,
+        file_path,
+        ftp_server="172.20.200.135",
+        ftp_username="ftpuser",
+        ftp_password="kh@12345",
+        ftp_folder="d_excel",
+        ftp_port=21,
+    ):
         ftp = FTP()
         ftp.connect(ftp_server, ftp_port)
         ftp.login(ftp_username, ftp_password)
@@ -576,7 +594,15 @@ class Support:
             ftp.storbinary(f"STOR {file_name}", file)
         ftp.quit()
 
-    def send_email_user(self,excel_file_path,user_email,from_date,to_date,msg="File Access",subject=None):
+    def send_email_user(
+        self,
+        excel_file_path,
+        user_email,
+        from_date,
+        to_date,
+        msg="File Access",
+        subject=None,
+    ):
         email_config = {
             "send_from": "Ahmed Qureshi <ahmed.qureshi@kokilabenhospitals.com>",
             "send_to": user_email,
@@ -603,14 +629,13 @@ class Support:
                 </html>
             """,
             "server": "172.20.200.29",
-            "port": 25
+            "port": 25,
         }
 
         if subject:
-            email_config['subject'] = subject
+            email_config["subject"] = subject
 
         if excel_file_path:
-
             # Get the size of the file in bytes
             file_size_mb = os.path.getsize(excel_file_path) / (1024 * 1024)
 
@@ -620,12 +645,10 @@ class Support:
                 "ftp_username": "ftpuser",
                 "ftp_password": "kh@12345",
                 "ftp_folder": "d_excel",
-                "ftp_port": 21
+                "ftp_port": 21,
             }
             # Upload file to FTP
-            self.upload_file_to_ftp(excel_file_path, **ftp_config) 
-
-       
+            self.upload_file_to_ftp(excel_file_path, **ftp_config)
 
             # Check if the file size is greater than 25 MB and send email accordingly
             if file_size_mb >= 25:
@@ -636,20 +659,19 @@ class Support:
         else:
             Email_Sender(**email_config)
 
-
-    def get_ip_kh_data(self,from_date,to_date):
+    def get_ip_kh_data(self, from_date, to_date):
         sql_qurey = Query.objects.get(query_name="Doctors Payout IP KH").query
-        sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
+        sql_qurey = sql_qurey.format(from_date=f"'{from_date}'", to_date=f"'{to_date}'")
         db = Ora()
         data, column = db.run_query_with_none_value(sql_qurey)
         df_dp_ip_kh = pd.DataFrame(data=data, columns=list(column))
         # current_dir = os.path.dirname(os.path.abspath(__file__))
         # df_dp_ip_kh = pd.read_excel(f"{current_dir}/resources/ip_payout.xlsx")
         return df_dp_ip_kh
-    
-    def get_op_kh_data(self,from_date,to_date):
+
+    def get_op_kh_data(self, from_date, to_date):
         sql_qurey = Query.objects.get(query_name="Doctors Payout OP KH").query
-        sql_qurey =sql_qurey.format(from_date=f"'{from_date}'",to_date=f"'{to_date}'")
+        sql_qurey = sql_qurey.format(from_date=f"'{from_date}'", to_date=f"'{to_date}'")
         db = Ora()
         data, column = db.run_query_with_none_value(sql_qurey)
         df_dp_op_kh = pd.DataFrame(data=data, columns=list(column))
@@ -658,15 +680,15 @@ class Support:
         return df_dp_op_kh
 
 
-
-
-def post_files_to_uploaded_folder(file_name,file):
+def post_files_to_uploaded_folder(file_name, file):
     data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_name)
-    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),'uploaded_files', file_name)
+    data_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "uploaded_files", file_name
+    )
     if os.path.exists(data_path):
-            os.remove(data_path)
+        os.remove(data_path)
     # Save rh_data in ../uploaded_files directory and replace if already exists
-    with open(data_path, 'wb+') as destination:
+    with open(data_path, "wb+") as destination:
         for chunk in file.chunks():
             destination.write(chunk)
     return data_path

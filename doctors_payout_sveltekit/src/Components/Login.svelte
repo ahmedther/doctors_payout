@@ -26,6 +26,7 @@
             userName: data.success,
             authToken: data.token,
             userID: data.user_id,
+            emailId: data.email_id,
         });
         isLoading = false;
     }

@@ -6,11 +6,12 @@ from datetime import datetime
 from payout_app.postgress_config import PostgressDB
 from payout_app.excel_maker import Support
 
+
 @shared_task
-def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
+def process_kd(from_date, to_date, rh_data, transplant_data, user_email):
     try:
-        from_date = datetime.strptime(from_date, '%Y-%m-%d').strftime('%d-%b-%Y')
-        to_date = datetime.strptime(to_date, '%Y-%m-%d').strftime('%d-%b-%Y')
+        from_date = datetime.strptime(from_date, "%Y-%m-%d").strftime("%d-%b-%Y")
+        to_date = datetime.strptime(to_date, "%Y-%m-%d").strftime("%d-%b-%Y")
         sup = Support()
         # current_dir = os.path.dirname(os.path.abspath(__file__))
         ##################################################################################################################
@@ -20,14 +21,14 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
         # Step 1 : Sub-Section 1 making the main DataFrame
         # df_dp_ip_kh = pd.read_excel(f"{current_dir}/resources/ip_payout.xlsx")
 
-        df_dp_ip_kh = sup.get_ip_kh_data(from_date,to_date)
+        df_dp_ip_kh = sup.get_ip_kh_data(from_date, to_date)
 
         # Step 1 : Sub-Section 2
         df_dp_ip_kh = sup.add_new_column(
             df_dp_ip_kh, "SOURCE OF DATA", "IP Admitting Doc wise rev rep"
         )
 
-        df_dp_op_kh = sup.get_op_kh_data(from_date,to_date)
+        df_dp_op_kh = sup.get_op_kh_data(from_date, to_date)
 
         # Step 1 : Sub-Section 2
         df_dp_op_kh = sup.add_new_column(
@@ -37,12 +38,10 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
         # # #Step 1 : Sub-Section 3 Combine Dataframe
         main_dataframe = sup.concat_dataframes(df_dp_ip_kh, df_dp_op_kh)
 
-        main_dataframe = sup.add_new_column(
-            main_dataframe, "COMMENTS", ""
-        )
+        main_dataframe = sup.add_new_column(main_dataframe, "COMMENTS", "")
         # # Delete Unused Data Frame
         del df_dp_ip_kh
-        del df_dp_op_kh 
+        del df_dp_op_kh
 
         # #Step 1 : Sub-Section 4  Get Doctor list form Postgres Database
         postDB = PostgressDB()
@@ -81,7 +80,6 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
 
             # Delete Extra Column
             df_dp_rh = sup.delete_columns(df_dp_rh, ["SERVICE_GROUP"])
-
 
             ##################################################################################################################
             # Step 6
@@ -164,7 +162,9 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
 
             # Calculations for Cardiac
             postDB = PostgressDB()
-            transplant_doctor_data, column_name = postDB.transplant_doctors("CARDIOLOGY")
+            transplant_doctor_data, column_name = postDB.transplant_doctors(
+                "CARDIOLOGY"
+            )
             # sup.excel_generator(excel_data=main_dataframe, page_name="test")
             transp_df = pd.DataFrame(
                 data=transplant_doctor_data,
@@ -194,7 +194,9 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
         # Step 5
         ##################################################################################################################
         # EHC Working
-        main_dataframe = sup.ehc_patient_working(main_dataframe, doctors_list_df,from_date=from_date,to_date=to_date)
+        main_dataframe = sup.ehc_patient_working(
+            main_dataframe, doctors_list_df, from_date=from_date, to_date=to_date
+        )
         # Delete Unused Dataframe Doctors List
         doctors_list_df = sup.delete_dataframe(doctors_list_df)
 
@@ -216,10 +218,22 @@ def process_kd(from_date,to_date,rh_data,transplant_data,user_email):
         # Step 10
         ##################################################################################################################
 
-        excel_file_path = sup.excel_generator(excel_data=main_dataframe, page_name="main_dataframe")
-        
-        sup.send_email_user(excel_file_path,user_email,from_date,to_date)
+        excel_file_path = sup.excel_generator(
+            excel_data=main_dataframe,
+            page_name="KD_Report",
+            from_date=from_date,
+            to_date=to_date,
+        )
+
+        sup.send_email_user(excel_file_path, user_email, from_date, to_date)
     except Exception as e:
         sup = Support()
         subject = f"❌ Unfortunately!!! An error has occurred during the processing of your request ❌"
-        sup.send_email_user(excel_file_path=None,user_email=user_email,from_date=from_date,to_date=to_date,msg=e,subject=subject)
+        sup.send_email_user(
+            excel_file_path=None,
+            user_email=user_email,
+            from_date=from_date,
+            to_date=to_date,
+            msg=e,
+            subject=subject,
+        )

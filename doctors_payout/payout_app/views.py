@@ -28,44 +28,46 @@ def index(request):
         return render(request, "payout_app/index.html")
 
     if request.method == "POST":
-        # try:
-        from_date = request.POST["from_date"]
-        to_date = request.POST["to_date"]
+        try:
+            from_date = request.POST["from_date"]
+            to_date = request.POST["to_date"]
 
-        # Serializer User to make it go through asa parametere in process_kd.delay
-        user_email = User.objects.get(id=request.POST["userID"]).email
+            # Serializer User to make it go through asa parametere in process_kd.delay
+            user_email = User.objects.get(id=request.POST["userID"]).email
 
-        rh_data = request.FILES.get("rh_data")
-        rh_data_path = (
-            post_files_to_uploaded_folder(
-                f'rh_data.{str(rh_data.name).split(".")[-1]}', rh_data
+            rh_data = request.FILES.get("rh_data")
+            rh_data_path = (
+                post_files_to_uploaded_folder(
+                    f'rh_data.{str(rh_data.name).split(".")[-1]}', rh_data
+                )
+                if rh_data
+                else None
             )
-            if rh_data
-            else None
-        )
 
-        transplant_data = request.FILES.get("transplantData")
-        transplant_data_path = (
-            post_files_to_uploaded_folder(
-                f'transplant_data.{str(transplant_data.name).split(".")[-1]}',
-                transplant_data,
+            transplant_data = request.FILES.get("transplantData")
+            transplant_data_path = (
+                post_files_to_uploaded_folder(
+                    f'transplant_data.{str(transplant_data.name).split(".")[-1]}',
+                    transplant_data,
+                )
+                if transplant_data
+                else None
             )
-            if transplant_data
-            else None
-        )
 
-        process_kd.delay(
-            from_date=from_date,
-            to_date=to_date,
-            rh_data=rh_data_path,
-            transplant_data=transplant_data_path,
-            user_email=user_email,
-        )
-        # process_kd(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
-        return JsonResponse({"success": "Success", "email_Id": user_email}, status=200)
+            process_kd.delay(
+                from_date=from_date,
+                to_date=to_date,
+                rh_data=rh_data_path,
+                transplant_data=transplant_data_path,
+                user_email=user_email,
+            )
+            # process_kd(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
+            return JsonResponse(
+                {"success": "Success", "email_Id": user_email}, status=200
+            )
 
-    # except Exception as e:
-    #     return JsonResponse({'error': str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
 
 # @csrf_exempt

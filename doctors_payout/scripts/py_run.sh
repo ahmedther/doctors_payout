@@ -2,13 +2,19 @@
 
 set -e
 
+while true; do
+  # Check if PostgreSQL server is available
+  /py/bin/python /doctors_payout/scripts/check_postgres.py
+
+  if [ $? -eq 0 ]; then
+    break  # Break the loop if connection successful
+  fi
+
+  sleep 1
+done
+
 
 python manage.py collectstatic --noinput
-
-until python -c "import psycopg2; psycopg2.connect('dbname=$POSTGRES_DB user=$POSTGRES_USER host=$POSTGRES_HOST password=$POSTGRES_PASSWORD port=$POSTGRES_PORT')" &>/dev/null; do
-    echo "Waiting for PostgreSQL to become available..."
-    sleep 1
-done
 
 rabbitmq-server &
 

@@ -21,7 +21,7 @@
         document.cookie = `authToken=${authToken}; expires=${expirationDate.toUTCString()}; path=/`;
         document.cookie = `userID=${userID}; expires=${expirationDate.toUTCString()}; path=/`;
         document.cookie = `emailId=${
-            e.detail.email_id
+            e.detail.emailId
         }; expires=${expirationDate.toUTCString()}; path=/`;
     }
 
