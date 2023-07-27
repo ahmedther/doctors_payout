@@ -62,6 +62,14 @@ def index(request):
                 transplant_data=transplant_data_path,
                 user_email=user_email,
             )
+            # process_kd(
+            #     from_date=from_date,
+            #     to_date=to_date,
+            #     rh_data=rh_data_path,
+            #     transplant_data=transplant_data_path,
+            #     user_email=user_email,
+            # )
+
             # process_kd(from_date=from_date,to_date=to_date,rh_data=rh_data_path,transplant_data=transplant_data_path,user_email=user_email)
             return JsonResponse(
                 {"success": "Success", "email_Id": user_email}, status=200

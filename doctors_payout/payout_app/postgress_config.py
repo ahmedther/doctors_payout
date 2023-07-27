@@ -1,13 +1,16 @@
 import psycopg2
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 from datetime import datetime
 
-db_name = "doctors_payout_database"
-username = "postgres"
-password = "ahmed"
-host = "172.20.100.81"
-port = 5432
+db_name = os.environ.get("POSTGRES_DB")
+username = os.environ.get("POSTGRES_USER")
+password = os.environ.get("POSTGRES_PASSWORD")
+host = os.environ.get("POSTGRES_HOST")
+port = os.environ.get("POSTGRES_PORT")
 
 
 class PostgressDB:
@@ -52,8 +55,6 @@ class PostgressDB:
         column_name = [i[0] for i in self.cursor.description]
         self.connection_close()
         return data, column_name
-
-    
 
 
 if __name__ == "__main__":

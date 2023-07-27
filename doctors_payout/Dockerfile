@@ -1,6 +1,5 @@
 FROM python:3.11.3-slim as builder
 
-LABEL maintainer='ahmed'
 
 ENV PYTHONUNBUFFERED 1
 
@@ -25,7 +24,11 @@ FROM python:3.11.3-slim
 ENV PYTHONUNBUFFERED 1
 
 COPY --from=builder /py /py
+
+WORKDIR /doctors_payout
+
 COPY ./ ./
+
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 rabbitmq-server curl unzip libaio1 \
@@ -47,7 +50,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 LABEL maintainer='ahmed'
 
-WORKDIR /doctors_payout
 
 ENV LD_LIBRARY_PATH=/cx_oracle/instantclient_21_9
 

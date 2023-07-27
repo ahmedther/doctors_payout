@@ -8,3 +8,4 @@ openpyxl
 celery
 django-cors-headers
 uwsgi
+python-dotenv

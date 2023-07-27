@@ -2,6 +2,8 @@
 
 set -e
 
+python manage.py collectstatic --noinput
+
 while true; do
   # Check if PostgreSQL server is available
   /py/bin/python /doctors_payout/scripts/check_postgres.py
@@ -12,9 +14,6 @@ while true; do
 
   sleep 1
 done
-
-
-python manage.py collectstatic --noinput
 
 rabbitmq-server &
 

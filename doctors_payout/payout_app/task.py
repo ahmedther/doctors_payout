@@ -20,16 +20,12 @@ def process_kd(from_date, to_date, rh_data, transplant_data, user_email):
 
         # Step 1 : Sub-Section 1 making the main DataFrame
         # df_dp_ip_kh = pd.read_excel(f"{current_dir}/resources/ip_payout.xlsx")
-
         df_dp_ip_kh = sup.get_ip_kh_data(from_date, to_date)
-
         # Step 1 : Sub-Section 2
         df_dp_ip_kh = sup.add_new_column(
             df_dp_ip_kh, "SOURCE OF DATA", "IP Admitting Doc wise rev rep"
         )
-
         df_dp_op_kh = sup.get_op_kh_data(from_date, to_date)
-
         # Step 1 : Sub-Section 2
         df_dp_op_kh = sup.add_new_column(
             df_dp_op_kh, "SOURCE OF DATA", "Op Rev share for Ext Doc Rep"

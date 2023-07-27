@@ -15,7 +15,7 @@ export async function makeAuthRequest(detail) {
             }),
             credentials: 'include', // Ensure cookies are sent with the request
         });
-
+        console.log(response)
         if (!response.ok) {
             const data = await response.json();
             return data
